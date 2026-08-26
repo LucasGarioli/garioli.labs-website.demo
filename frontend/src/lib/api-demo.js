@@ -170,9 +170,92 @@ function semente() {
         /// digitado, mudar uma linha do escopo deixava o total mentindo, e o
         /// mesmo valor aparecia uma quarta vez no funil do dono.
         id: 'PRJ-2026-0091',
+        numero: 'PROP. 0091/2026',
         instituicao: 'Comunidade Vale Verde',
         cidade: 'Vila Nova · ES',
         maps_url: 'https://www.google.com/maps/search/?api=1&query=Comunidade+Vale+Verde+ES',
+        representante: 'Direção da Comunidade Vale Verde',
+        titulo: 'Projeto integrado de infraestrutura audiovisual',
+        resumo:
+          'Modernização da infraestrutura audiovisual do espaço de culto: acústica, som, ' +
+          'projeção, iluminação cênica, rede de dados e transmissão, integrados ao projeto ' +
+          'elétrico existente.',
+        disciplinas: 'Acústica, áudio, projeção, iluminação, rede e transmissão',
+        objeto:
+          'Elaboração de projeto técnico integrado para modernização da infraestrutura ' +
+          'audiovisual do espaço de culto, abrangendo tratamento acústico, sistema de som, ' +
+          'projeção, iluminação cênica, rede de dados e sistema de transmissão, com ' +
+          'compatibilização entre as frentes e integração ao projeto elétrico já executado.',
+        /// O diagnóstico é o que sustenta o preço: sem ele, a proposta é uma
+        /// tabela de serviços; com ele, é a resposta a um problema visitado.
+        diagnostico: [
+          'Ausência de tratamento acústico — a única absorção existente vem dos bancos estofados.',
+          'Projetores com abertura e potência inadequadas para as distâncias e a luminosidade do ambiente.',
+          'Projeção dependente de dois computadores em paralelo, sem redundância nem sincronia.',
+          'Iluminação cênica executada parcialmente, com equipamentos subdimensionados para o volume do espaço.',
+          'Ausência de rede estruturada para tráfego de áudio, vídeo e controle.',
+          'Transmissão não estruturada, sem cadeia de sinal definida.',
+          'Operadores relatam dificuldade e confusão na operação dos sistemas atuais.'
+        ],
+        diretrizes: [
+          {
+            t: 'Integração antes de equipamento',
+            d: 'As seis frentes são projetadas como um sistema único e compatibilizadas com o projeto elétrico já executado.'
+          },
+          {
+            t: 'Acústica como ponto de partida',
+            d: 'Nenhum sistema de som resolve um ambiente não tratado: a acústica define o dimensionamento do áudio.'
+          },
+          {
+            t: 'Operação simples e confiável',
+            d: 'Cadeias de sinal enxutas, presets claros e menos pontos de falha — o culto não pode depender de improviso.'
+          },
+          {
+            t: 'Otimização do investimento',
+            d: 'Especificação de equipamentos disponíveis no mercado nacional, com alternativas por faixa de investimento.'
+          }
+        ],
+        criterio_aceite:
+          'O projeto é considerado entregue quando as plantas executivas, o diagrama de ' +
+          'fluxo de sinal, o memorial descritivo e a lista técnica das frentes contratadas ' +
+          'forem disponibilizados e a sessão de apresentação técnica for realizada.',
+        entregaveis: [
+          {
+            disciplina: 'Acústica',
+            documentacao: 'Planta de tratamento com locação e cotas, cálculo de reverberação por banda de oitava, memorial e quantitativos de materiais.'
+          },
+          {
+            disciplina: 'Sistema de som',
+            documentacao: 'Planta de posicionamento e cobertura, diagrama de fluxo de sinal, dimensionamento de potência e lista técnica.'
+          },
+          {
+            disciplina: 'Projeção',
+            documentacao: 'Estudo de superfícies, cálculo de distância e luminosidade, cadeia de vídeo e lista técnica.'
+          },
+          {
+            disciplina: 'Iluminação cênica',
+            documentacao: 'Planta de rigging e endereçamento DMX, dimensionamento de carga, mapa de cenas e lista técnica.'
+          },
+          {
+            disciplina: 'Rede de dados',
+            documentacao: 'Topologia lógica e física, segmentação por VLAN para áudio, vídeo e controle, plano de endereçamento e lista técnica.'
+          },
+          {
+            disciplina: 'Transmissão',
+            documentacao: 'Cadeia de captação, roteamento de áudio e vídeo, fluxo de publicação e lista técnica.'
+          }
+        ],
+        formato_entrega: 'PDF',
+        prazo_dias: 45,
+        prazo_condicao:
+          'Entrega única, após assinatura do contrato e confirmação da primeira parcela.',
+        incluso:
+          'Sessão de apresentação técnica das frentes contratadas, duas rodadas de revisão ' +
+          'solicitadas em até 15 dias da entrega e referências de fornecimento na lista técnica.',
+        nao_incluso:
+          'Execução de obra, cotação e negociação com fornecedores, fornecimento e instalação ' +
+          'de equipamentos, projeto elétrico e estrutural, licenças e a configuração ' +
+          'operacional dos sistemas — objeto do aditivo técnico.',
         escopo: [
           {
             titulo: 'Projeto acústico',
@@ -190,6 +273,36 @@ function semente() {
             centavos: 250_000
           }
         ],
+        /// Serviços de campo, precificados à vista de todos e concedidos como
+        /// cortesia. O valor existe para que a cortesia seja mensurável — uma
+        /// gentileza sem número não é gentileza, é vaguidão.
+        aditivo: {
+          titulo: 'Configuração e acompanhamento operacional',
+          resumo:
+            'Serviços técnicos complementares ao projeto, executados no local após a ' +
+            'aquisição e instalação dos equipamentos. Estão precificados de forma ' +
+            'transparente abaixo e, nesta proposta, são concedidos integralmente como cortesia.',
+          cortesia: true,
+          validade_meses: 12,
+          dimensao:
+            '5 diárias presenciais de até 8 horas, 2 eventos acompanhados ao vivo e 12 horas ' +
+            'de suporte remoto, distribuídas conforme o cronograma de instalação.',
+          condicoes:
+            'Executável somente após a aquisição e instalação dos equipamentos especificados ' +
+            'no projeto. Depende de agendamento com no mínimo 10 dias de antecedência e de ' +
+            'que a instalação siga o projeto entregue. Não substitui revisão de projeto, ' +
+            'fiscalização de obra nem responsabilidade técnica pela execução.',
+          itens: [
+            { t: 'Áudio — configuração e alinhamento', d: 'Console e processamento, medição em campo, equalização, delay e ganho de sistema.', centavos: 240_000 },
+            { t: 'Projeção — configuração', d: 'Mapeamento das superfícies e cadeia de vídeo.', centavos: 120_000 },
+            { t: 'Iluminação — configuração e cenas', d: 'Endereçamento DMX, criação e gravação das cenas.', centavos: 100_000 },
+            { t: 'Rede — configuração', d: 'VLANs de áudio, vídeo e controle, QoS e endereçamento.', centavos: 60_000 },
+            { t: 'Transmissão — configuração', d: 'Cadeia de captação, roteamento e fluxo de publicação.', centavos: 120_000 },
+            { t: 'Treinamento e documentação', d: 'Treinamento formal dos operadores e guia rápido com presets.', centavos: 140_000 },
+            { t: 'Acompanhamento ao vivo', d: 'Operação assistida com a equipe, com ajustes finos em situação real.', centavos: 120_000 },
+            { t: 'Acompanhamento da instalação', d: 'Conferência da execução do fornecedor contra o projeto entregue.', centavos: 100_000 }
+          ]
+        },
         premissas: [
           { label: 'Área declarada', valor: '120 a 300 m²' },
           { label: 'Lotação típica', valor: 'cerca de 300 lugares' },
@@ -198,6 +311,10 @@ function semente() {
           { label: 'Revisões incluídas', valor: '2 rodadas' }
         ],
         desconto_pct: 10,
+        desconto_motivo: 'instituições religiosas e do terceiro setor',
+        /// 40 na assinatura e o resto em duas: `entrada_pct` a zero devolve o
+        /// parcelamento simples, em partes iguais.
+        entrada_pct: 40,
         parcelas: 2,
         /// Quem paga à vista tira 5% do já descontado. É a diferença entre
         /// receber em 30 dias e receber na assinatura.
@@ -206,6 +323,7 @@ function semente() {
         /// enviada ontem continua tendo sido enviada ontem daqui a dois anos.
         enviada_em_dias: -1,
         validade_dias: 15,
+        situacao: 'enviada',
         aceita_em: null,
         /// Preenchido no aceite: é ele que decide o texto da cláusula 4ª.
         forma_pagamento: null,
