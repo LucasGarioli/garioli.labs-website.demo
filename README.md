@@ -91,6 +91,7 @@ do problema ao contrato sem trocar de página.
 | Seção | O que ela responde |
 | --- | --- |
 | Hero + números | o que a empresa faz, em uma frase e quatro medidas |
+| **Antes e depois** | como o mesmo salão fica antes e depois do projeto — a divisa arrasta |
 | Serviços | as seis frentes que podem ser contratadas separadamente |
 | Processo | os cinco passos, da triagem à entrega |
 | **Estudo de caso** | o resultado: cinco números, oito verificações normativas, quatro pranchas com carimbo, o mapa de cobertura e um modelo 3D navegável |
@@ -106,10 +107,34 @@ coisa que o olho encontra primeiro. Norma citada ao lado de cada verificação
 (ISO 3382-2, SPL a 4 kHz, IEC 60268-16), e a nota final dizendo que os valores
 são ilustrativos.</sub>
 
+### O comparador antes/depois
+
+Logo abaixo do hero, um render do mesmo salão em dois estados — como ele é hoje,
+sob luz fluorescente e sem tratamento, e como fica com o projeto executado — sob
+uma única divisa inclinada que o leitor arrasta. A divisa é um
+`<input type="range">` transparente por cima do desenho: com isso o comparador
+ganha arrasto de mouse, arrasto por toque, setas do teclado, anel de foco e nome
+acessível sem uma linha de `pointermove` escrita à mão.
+
+Os dois lados são SVG desenhado, não fotografia: gradiente por superfície,
+oclusão de ambiente nos cantos, grão de sensor por cima de tudo e as fileiras de
+bancos derivadas da perspectiva em vez de digitadas uma a uma. O componente
+aceita `antes` e `depois` como URLs — no dia em que houver foto do salão real,
+ela entra sem mexer no mecanismo.
+
+### As pranchas e o glossário
+
 Dentro da faixa vem o caderno técnico de um templo de 5.065 lugares: quatro
 pranchas com carimbo — planta cotada, corte longitudinal A-A com o memorial de
 absorção, axonometria e folha de resultados —, o mapa de cobertura sonora como
 sai da ferramenta de projeto da casa e um modelo 3D que gira no navegador.
+
+As pranchas ocupam a **página inteira**, de borda a borda — desenho de engenharia
+pequeno não se lê. O que continua na coluna de texto é o que é texto: a legenda
+da figura e, sob cada prancha, um glossário de quatro ou cinco verbetes. Cada
+verbete tem duas linhas: o que o termo significa e, depois de uma seta, para que
+serve avaliar aquilo. A primeira linha é para o engenheiro; a segunda, para quem
+vai assinar o contrato.
 
 <img src="docs/img/home-prancha.jpg" alt="Planta baixa cotada do auditório" />
 

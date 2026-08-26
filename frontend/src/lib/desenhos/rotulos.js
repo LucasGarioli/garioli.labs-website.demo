@@ -56,6 +56,149 @@ const PT = {
     lugares: (p, m, t) => `${p} plateia + ${m} mezanino = ${t}`
   },
 
+  /// Glossário por prancha: o que o termo é, e para que serve avaliá-lo.
+  ///
+  /// A primeira linha de cada verbete é escrita para quem projeta; a segunda,
+  /// marcada com uma seta, para quem contrata. Nenhum termo entra aqui sem
+  /// estar escrito na prancha correspondente.
+  glossario: {
+    titulo: 'O que cada termo desta prancha quer dizer',
+    planta: [
+      {
+        t: 'Planta baixa cotada',
+        d: 'Corte horizontal do pavimento a 1,50 m do piso, com as medidas reais anotadas sobre a geometria: paredes, palco, corredores e a posição de cada fileira.',
+        p: 'É a régua de tudo o que vem depois. Enquanto ela não existe, nenhuma caixa, tela ou refletor pode ser escolhido sem chute — quantidade e potência saem de distância medida, não de catálogo.'
+      },
+      {
+        t: 'Plateia em leque',
+        d: 'Fileiras dispostas em arcos concêntricos com centro no palco, em vez de linhas retas paralelas.',
+        p: 'Mantém toda a plateia dentro do mesmo ângulo de cobertura e a distâncias parecidas do palco. É o que evita a sala dividida entre quem ouve bem e quem ouve o vizinho antes da caixa.'
+      },
+      {
+        t: 'Cota crítica',
+        d: 'A maior distância entre o arranjo principal e uma poltrona ocupada — marcada em vermelho na prancha.',
+        p: 'É o número que dimensiona o sistema inteiro. O nível cai com a distância, e a caixa tem de entregar na última fileira o mesmo que promete na primeira: é dessa cota que sai a potência necessária.'
+      },
+      {
+        t: 'Delay',
+        d: 'Caixa auxiliar no meio da sala, com o sinal atrasado em milissegundos para chegar junto com o som vindo do arranjo principal.',
+        p: 'Sem o atraso certo, quem senta perto dela ouve a mesma palavra duas vezes e a fala perde nitidez. Com ele, a caixa reforça sem que ninguém perceba que ela existe.'
+      }
+    ],
+    corte: [
+      {
+        t: 'Corte longitudinal A-A',
+        d: 'A sala vista como se tivesse sido serrada pelo eixo, do palco ao fundo, com as alturas reais anotadas.',
+        p: 'Altura é onde os problemas se escondem. Forro, mezanino e inclinação do piso só se verificam de lado — em planta, os três são invisíveis.'
+      },
+      {
+        t: 'Pé-direito livre',
+        d: 'Distância vertical entre o piso e o obstáculo mais baixo acima dele: forro, viga ou a laje do mezanino.',
+        p: 'É o que decide se um balcão cabe, se o projetor alcança a tela e se quem está na última fileira levanta sem bater a cabeça. Descobrir isso na obra custa muito mais do que descobrir aqui.'
+      },
+      {
+        t: 'Coeficiente de absorção α',
+        d: 'Fração da energia sonora que uma superfície absorve em vez de devolver à sala, de 0 (espelho acústico) a 1 (absorve tudo), medida por banda de frequência.',
+        p: 'É o que separa tratamento de decoração. Duas superfícies podem ser idênticas na foto e opostas no α — e é o α, multiplicado pela área, que decide se a sala vai ser entendida ou vai ecoar.'
+      },
+      {
+        t: 'Memorial de absorção',
+        d: 'Tabela que soma α × área de cada superfície real da sala para obter a absorção total A, da qual sai o tempo de reverberação pela fórmula de Sabine.',
+        p: 'É a prova de que o número prometido tem conta atrás dele. Cada linha pode ser conferida, e trocar um material muda o resultado à vista de todos — em vez de pedir confiança.'
+      }
+    ],
+    axo: [
+      {
+        t: 'Axonometria',
+        d: 'Vista tridimensional em que retas paralelas continuam paralelas e a escala se mantém nos três eixos, sem a distorção de perspectiva de uma fotografia.',
+        p: 'Serve para entender o volume de uma vez só e para conferir: como não há ponto de fuga, a altura medida no desenho é a altura real.'
+      },
+      {
+        t: 'Envoltória',
+        d: 'A superfície fechada que delimita o volume acústico: piso, paredes, forro e as faces do mezanino.',
+        p: 'É o recipiente onde o som mora. O volume dela e a área das suas superfícies são as duas entradas de qualquer cálculo de reverberação — mexer na envoltória refaz o projeto inteiro.'
+      },
+      {
+        t: 'Rake',
+        d: 'Desnível vertical de cada fileira em relação à fileira imediatamente à frente.',
+        p: 'É o que faz cada pessoa enxergar por cima da cabeça da da frente. No som vale o mesmo: sem rake, as primeiras fileiras absorvem o que era para chegar às últimas.'
+      },
+      {
+        t: 'Preenchimento',
+        d: 'Caixas menores que cobrem as poltronas fora do alcance útil do arranjo principal: a primeira fila e as laterais que envolvem o palco.',
+        p: 'São exatamente os assentos que costumam ser esquecidos e reclamam depois. Cobri-los custa pouco no projeto e é quase impossível de corrigir com a obra pronta.'
+      }
+    ],
+    mapa: [
+      {
+        t: 'SPL direto',
+        d: 'Nível de pressão sonora, em dB, que chega a um ponto vindo direto da caixa, sem contar as reflexões da sala.',
+        p: 'É a parte do som que carrega a palavra. Se o direto já chega fraco ou desigual na poltrona, nenhuma equalização conserta — aumentar o volume só piora o resto.'
+      },
+      {
+        t: 'Malha de receptores',
+        d: 'Grade de pontos de medição virtual distribuída sobre o plano das poltronas, na altura do ouvido de quem está sentado (1,20 m).',
+        p: 'É o que transforma uma impressão de cobertura em um número por assento. Cada célula do mapa é uma conta feita, não uma cor escolhida à mão.'
+      },
+      {
+        t: 'Somatório energético',
+        d: 'Forma de somar a contribuição de várias caixas num mesmo ponto pela energia, sem depender da relação de fase entre elas.',
+        p: 'É o critério conservador. Ele não promete os reforços de fase que só existem em condição ideal, então a sala tende a entregar melhor do que o papel — nunca pior.'
+      },
+      {
+        t: 'Faixa de nível',
+        d: 'Diferença, em dB, entre a poltrona de maior e a de menor nível, declarada para a sala inteira e para os 90 % centrais.',
+        p: 'É a medida de justiça do projeto. Três decibéis de faixa tratam todo mundo igual; doze criam plateia de primeira e de segunda classe — e é daí que vem a queixa de que no fundo não se ouve.'
+      }
+    ],
+    resultados: [
+      {
+        t: 'T30',
+        d: 'Tempo, em segundos, que o som leva para cair 60 dB depois que a fonte para, extrapolado a partir dos 30 dB medidos, banda a banda, conforme a ISO 3382-2.',
+        p: 'É o número que decide se a sala é entendida. Curto demais, ela soa morta e cansa quem fala; longo demais, cada sílaba atropela a seguinte e a mensagem se perde no meio do salão.'
+      },
+      {
+        t: 'Banda de oitava',
+        d: 'Faixa de frequências cuja borda superior é o dobro da inferior: 125, 250, 500, 1 k, 2 k e 4 kHz.',
+        p: 'Uma sala não tem um problema só — pode estar certa na voz e errada no grave. Avaliar banda a banda é o que impede um tratamento de resolver metade do problema e criar outro.'
+      },
+      {
+        t: 'STI',
+        d: 'Índice de transmissão de fala, de 0 a 1, conforme a IEC 60268-16: quanto da modulação da voz sobrevive ao caminho entre o microfone e o ouvinte.',
+        p: 'É a nota final para a única coisa que importa num templo ou auditório: entender o que está sendo dito. Ele é calculado poltrona a poltrona, e o que vale é a pior delas, não a média.'
+      },
+      {
+        t: 'Ganho antes da realimentação',
+        d: 'Margem, em dB, entre o nível de operação e o ponto em que o sistema começa a microfonar.',
+        p: 'É o fôlego de quem opera ao vivo. Sem margem, o culto acontece com o dedo no fader e a microfonia é questão de tempo — e a causa quase nunca é a mesa, é a geometria entre microfone e caixa.'
+      },
+      {
+        t: 'Ruído de fundo',
+        d: 'Nível que a sala apresenta com o sistema ligado e ninguém falando: ar-condicionado, projetor, ventilação e rua.',
+        p: 'É o piso do qual a voz precisa subir. Cada decibel de ruído a menos é um decibel que não precisa ser gasto em potência — e é o parâmetro mais barato de resolver antes da obra e mais caro depois.'
+      }
+    ]
+  },
+
+  comparador: {
+    aria:
+      'Comparação entre o salão como está hoje e o mesmo salão com o projeto ' +
+      'executado. Arraste o divisor para revelar mais de um lado ou do outro.',
+    antes: 'hoje',
+    depois: 'projeto executado',
+    dica: 'arraste ou use as setas',
+    leitura: (p) => `${p} % do projeto executado visível`,
+    figcaption:
+      'fig. 00 · o mesmo salão, antes e depois — arraste o divisor. À esquerda, o ' +
+      'que o levantamento encontra: alvenaria pintada e forro de PVC, superfícies ' +
+      'que devolvem à sala quase todo o som que recebem, luz de trabalho chapada e ' +
+      'duas caixas de mercado tentando cobrir a plateia inteira. À direita, o que o ' +
+      'projeto entrega: forro absorvente em plano inclinado, ripado de difusão nas ' +
+      'laterais, arranjos L/R dimensionados para alcançar a última fileira com o ' +
+      'mesmo nível da primeira, e luz em camadas. A geometria e as poltronas são as ' +
+      'mesmas dos dois lados: o que muda é o projeto, não a sala.'
+  },
+
   planta: {
     aria: (n) => `Planta baixa cotada do auditório de ${n} lugares`,
     conteudo: 'Planta baixa · nível ±0,00',
@@ -335,6 +478,144 @@ const EN = {
     distancia: (d) => `${d} m — array → farthest seat`,
     peDireito: (a, b, media) => `ceiling ${a} to ${b} m · mean ${media} m`,
     lugares: (p, m, t) => `${p} floor + ${m} balcony = ${t}`
+  },
+
+  glossario: {
+    titulo: 'What every term on this sheet means',
+    planta: [
+      {
+        t: 'Dimensioned floor plan',
+        d: 'A horizontal cut through the floor at 1.50 m, with the real measurements written over the geometry: walls, stage, aisles and the position of every row.',
+        p: 'It is the ruler for everything that follows. Until it exists, no loudspeaker, screen or fixture can be chosen without guessing — quantity and power come from measured distance, not from a catalogue.'
+      },
+      {
+        t: 'Fan seating',
+        d: 'Rows laid out as concentric arcs centred on the stage rather than as parallel straight lines.',
+        p: 'It keeps the whole audience inside the same coverage angle and at comparable distances from the stage. That is what prevents a room split between people who hear well and people who hear their neighbour first.'
+      },
+      {
+        t: 'Critical dimension',
+        d: 'The longest distance between the main array and an occupied seat — drawn in red on the sheet.',
+        p: 'It is the figure that sizes the entire system. Level falls with distance, and the array has to deliver at the last row what it promises at the first: the required power comes from this dimension.'
+      },
+      {
+        t: 'Delay',
+        d: 'A secondary loudspeaker in the middle of the room, fed with the signal delayed by milliseconds so it arrives together with the sound from the main array.',
+        p: 'Without the right delay, anyone sitting near it hears the same word twice and speech loses definition. With it, the cabinet reinforces without anyone noticing it is there.'
+      }
+    ],
+    corte: [
+      {
+        t: 'Longitudinal section A-A',
+        d: 'The room seen as if sawn along its centreline, from stage to rear wall, with the real heights written on it.',
+        p: 'Height is where the problems hide. Ceiling, balcony and floor rake can only be checked from the side — in plan, all three are invisible.'
+      },
+      {
+        t: 'Clear height',
+        d: 'The vertical distance between the floor and the lowest obstruction above it: ceiling, beam or the balcony slab.',
+        p: 'It decides whether a balcony fits, whether the projector reaches the screen and whether someone in the last row can stand up without hitting their head. Finding this out on site costs far more than finding it out here.'
+      },
+      {
+        t: 'Absorption coefficient α',
+        d: 'The fraction of sound energy a surface absorbs rather than returns to the room, from 0 (an acoustic mirror) to 1 (fully absorbing), measured per frequency band.',
+        p: 'It is what separates treatment from decoration. Two surfaces can look identical in a photograph and be opposites in α — and it is α, multiplied by area, that decides whether the room is understood or echoes.'
+      },
+      {
+        t: 'Absorption schedule',
+        d: 'A table summing α × area over every real surface in the room to obtain total absorption A, from which the reverberation time follows by the Sabine formula.',
+        p: 'It is the proof that the promised figure has arithmetic behind it. Every line can be checked, and swapping a material changes the result in plain sight — instead of asking for trust.'
+      }
+    ],
+    axo: [
+      {
+        t: 'Axonometric',
+        d: 'A three-dimensional view in which parallel lines stay parallel and scale is preserved on all three axes, without the perspective distortion of a photograph.',
+        p: 'It exists so the volume can be grasped at once, and so it can be checked: with no vanishing point, a height measured on the drawing is the real height.'
+      },
+      {
+        t: 'Envelope',
+        d: 'The closed surface bounding the acoustic volume: floor, walls, ceiling and the faces of the balcony.',
+        p: 'It is the container the sound lives in. Its volume and the area of its surfaces are the two inputs to any reverberation calculation — change the envelope and the whole design is redone.'
+      },
+      {
+        t: 'Rake',
+        d: 'The vertical rise of each row relative to the row immediately in front of it.',
+        p: 'It is what lets each person see over the head in front. The same holds for sound: with no rake, the front rows absorb what was meant to reach the back ones.'
+      },
+      {
+        t: 'Fill',
+        d: 'Smaller cabinets covering the seats outside the useful reach of the main array: the front row and the sides that wrap the stage.',
+        p: 'These are exactly the seats that get forgotten and complain later. Covering them costs little in design and is close to impossible to correct once the room is built.'
+      }
+    ],
+    mapa: [
+      {
+        t: 'Direct SPL',
+        d: 'The sound pressure level, in dB, arriving at a point straight from the loudspeaker, excluding the reflections of the room.',
+        p: 'It is the part of the sound that carries the word. If the direct field already arrives weak or uneven at the seat, no equalisation will fix it — turning it up only makes the rest worse.'
+      },
+      {
+        t: 'Receiver grid',
+        d: 'A grid of virtual measurement points spread over the seating plane at the ear height of a seated listener (1.20 m).',
+        p: 'It is what turns an impression of coverage into a number per seat. Every cell of the map is a computation, not a colour chosen by hand.'
+      },
+      {
+        t: 'Energetic summation',
+        d: 'A way of summing the contribution of several loudspeakers at one point by energy, without relying on the phase relationship between them.',
+        p: 'It is the conservative criterion. It does not promise the phase reinforcement that only exists under ideal conditions, so the room tends to deliver better than the paper — never worse.'
+      },
+      {
+        t: 'Level spread',
+        d: 'The difference, in dB, between the loudest and the quietest seat, stated for the whole room and for the central 90 %.',
+        p: 'It is the fairness measure of the design. Three decibels of spread treat everyone alike; twelve create a first-class and a second-class audience — and that is where the complaint about not hearing at the back comes from.'
+      }
+    ],
+    resultados: [
+      {
+        t: 'T30',
+        d: 'The time, in seconds, for sound to fall 60 dB after the source stops, extrapolated from the measured 30 dB, band by band, per ISO 3382-2.',
+        p: 'It is the figure that decides whether the room is understood. Too short and it sounds dead and tires the speaker; too long and each syllable runs into the next, and the message is lost halfway down the hall.'
+      },
+      {
+        t: 'Octave band',
+        d: 'A frequency range whose upper edge is twice the lower one: 125, 250, 500, 1 k, 2 k and 4 kHz.',
+        p: 'A room never has just one problem — it can be right on speech and wrong on the low end. Assessing band by band is what stops a treatment from solving half the problem and creating another.'
+      },
+      {
+        t: 'STI',
+        d: 'The speech transmission index, from 0 to 1, per IEC 60268-16: how much of the modulation of the voice survives the path from microphone to listener.',
+        p: 'It is the final mark for the only thing that matters in a temple or an auditorium: understanding what is being said. It is computed seat by seat, and what counts is the worst seat, not the average.'
+      },
+      {
+        t: 'Gain before feedback',
+        d: 'The margin, in dB, between the operating level and the point at which the system starts to ring.',
+        p: 'It is the headroom of whoever mixes live. With no margin, the service happens with a finger on the fader and feedback is a matter of time — and the cause is almost never the console, it is the geometry between microphone and loudspeaker.'
+      },
+      {
+        t: 'Background noise',
+        d: 'The level the room shows with the system powered and nobody speaking: air conditioning, projector, ventilation and street.',
+        p: 'It is the floor the voice has to rise above. Every decibel of noise removed is a decibel that need not be spent on power — and it is the cheapest parameter to solve before the work and the dearest afterwards.'
+      }
+    ]
+  },
+
+  comparador: {
+    aria:
+      'Comparison between the hall as it stands today and the same hall with the ' +
+      'project built. Drag the divider to reveal more of either side.',
+    antes: 'today',
+    depois: 'project built',
+    dica: 'drag or use the arrow keys',
+    leitura: (p) => `${p} % of the built project visible`,
+    figcaption:
+      'fig. 00 · the same hall, before and after — drag the divider. On the left, ' +
+      'what the survey finds: painted masonry and a PVC ceiling, surfaces that hand ' +
+      'the room back nearly all the sound they receive, flat work light and two ' +
+      'consumer cabinets trying to cover the whole audience. On the right, what the ' +
+      'project delivers: an absorbing raked ceiling, timber slat diffusion on the ' +
+      'side walls, L/R arrays sized to reach the last row at the level of the first, ' +
+      'and light in layers. The geometry and the seats are the same on both sides: ' +
+      'what changes is the design, not the room.'
   },
 
   planta: {
