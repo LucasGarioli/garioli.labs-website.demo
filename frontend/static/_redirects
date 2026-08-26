@@ -1,0 +1,5 @@
+# O adapter-static emite um único index.html e o roteamento acontece no cliente.
+# Sem esta regra, abrir /admin, /proposta ou /orcamento direto na barra de
+# endereços cairia em 404 no host estático — só a home funcionaria.
+# O 200 (e não 302) preserva a URL que a pessoa digitou.
+/*    /index.html   200
