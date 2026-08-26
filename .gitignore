@@ -6,3 +6,7 @@
 # sistema
 Thumbs.db
 .DS_Store
+
+# referência de trabalho — este repositório é público, e os PDFs de exemplo
+# trazem nome de cliente, CNPJ, endereço e chave Pix reais. Ficam fora do git.
+/*.pdf
