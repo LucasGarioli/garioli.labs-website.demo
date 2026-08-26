@@ -70,7 +70,7 @@ impl Store {
 
         if sorteada {
             tracing::warn!(
-                "conta do dono criada com senha sorteada — {} / {}  (defina GARIOLI_ADMIN_SENHA para fixar)",
+                "conta do dono criada com senha sorteada — {} / {} (defina GARIOLI_ADMIN_SENHA para fixar)",
                 email,
                 senha
             );
@@ -210,55 +210,55 @@ pub fn clausulas(dados: &DadosContrato, proposta: &Proposta) -> Vec<Clausula> {
         Clausula {
             titulo: "Cláusula 1ª — Das partes".into(),
             texto: format!(
-                "CONTRATADA: 00.000.000 NOME DA CONTRATADA (Garioli Labs), CNPJ 00.000.000/0001-00,                  MEI, com sede em Cachoeiro de Itapemirim/ES. CONTRATANTE: {}, inscrita sob o nº {},                  com sede em {}, representada por {}, CPF {}, na qualidade de {}.",
+                "CONTRATADA: 00.000.000 NOME DA CONTRATADA (Garioli Labs), CNPJ 00.000.000/0001-00, MEI, com sede em Cachoeiro de Itapemirim/ES. CONTRATANTE: {}, inscrita sob o nº {}, com sede em {}, representada por {}, CPF {}, na qualidade de {}.",
                 dados.razao, dados.cnpj, dados.endereco, dados.representante, dados.cpf_rep, dados.cargo
             ),
         },
         Clausula {
             titulo: "Cláusula 2ª — Do objeto".into(),
             texto: format!(
-                "Prestação de serviços de engenharia de projeto conforme escopo da proposta {}                  — documento que integra este contrato como anexo e prevalece sobre entendimentos verbais.                  O objeto é o projeto técnico; não abrange execução de obra, instalação, fornecimento                  de equipamentos nem responsabilidade por serviços de terceiros.",
+                "Prestação de serviços de engenharia de projeto conforme escopo da proposta {} — documento que integra este contrato como anexo e prevalece sobre entendimentos verbais. O objeto é o projeto técnico; não abrange execução de obra, instalação, fornecimento de equipamentos nem responsabilidade por serviços de terceiros.",
                 proposta.id
             ),
         },
         Clausula {
             titulo: "Cláusula 3ª — Do prazo".into(),
-            texto: "O prazo de entrega começa a contar da confirmação da 1ª parcela e do recebimento                     integral das informações e acessos necessários, suspendendo-se enquanto pendente                     obrigação da CONTRATANTE.".into(),
+            texto: "O prazo de entrega começa a contar da confirmação da 1ª parcela e do recebimento integral das informações e acessos necessários, suspendendo-se enquanto pendente obrigação da CONTRATANTE.".into(),
         },
         Clausula {
             titulo: "Cláusula 4ª — Do preço e do pagamento".into(),
             texto: format!(
-                "Pelo objeto, a CONTRATANTE pagará {}. {} O atraso implica correção monetária,                  juros de 1% ao mês e multa de 2%, nos termos do art. 406 do Código Civil.",
+                "Pelo objeto, a CONTRATANTE pagará {}. {} O atraso implica correção monetária, juros de 1% ao mês e multa de 2%, nos termos do art. 406 do Código Civil.",
                 proposta.total, proposta.condicoes
             ),
         },
         Clausula {
             titulo: "Cláusula 5ª — Da propriedade intelectual".into(),
-            texto: "Os direitos patrimoniais sobre o projeto permanecem com a CONTRATADA até a                     quitação integral, nos termos da Lei 9.610/98. Quitado o preço, a CONTRATANTE                     recebe licença de uso para a finalidade e o local objeto do contrato, sendo vedada                     a cessão, reprodução ou reuso em outra unidade sem autorização escrita.".into(),
+            texto: "Os direitos patrimoniais sobre o projeto permanecem com a CONTRATADA até a quitação integral, nos termos da Lei 9.610/98. Quitado o preço, a CONTRATANTE recebe licença de uso para a finalidade e o local objeto do contrato, sendo vedada a cessão, reprodução ou reuso em outra unidade sem autorização escrita.".into(),
         },
         Clausula {
             titulo: "Cláusula 6ª — Das revisões e do suporte".into(),
-            texto: "Estão incluídas 2 rodadas de revisão sobre o escopo contratado. Após a entrega,                     dúvidas de interpretação e de implantação do projeto são esclarecidas sem custo                     adicional, por prazo indeterminado. Revisões que alterem premissas, área ou                     disciplinas constituem novo escopo, mediante aditivo.".into(),
+            texto: "Estão incluídas 2 rodadas de revisão sobre o escopo contratado. Após a entrega, dúvidas de interpretação e de implantação do projeto são esclarecidas sem custo adicional, por prazo indeterminado. Revisões que alterem premissas, área ou disciplinas constituem novo escopo, mediante aditivo.".into(),
         },
         Clausula {
             titulo: "Cláusula 7ª — Da rescisão".into(),
-            texto: "A rescisão imotivada pela CONTRATANTE após o início dos trabalhos implica multa                     de 20% sobre o saldo, sem prejuízo do pagamento das etapas já executadas.                     A inadimplência superior a 15 dias autoriza a suspensão das entregas.".into(),
+            texto: "A rescisão imotivada pela CONTRATANTE após o início dos trabalhos implica multa de 20% sobre o saldo, sem prejuízo do pagamento das etapas já executadas. A inadimplência superior a 15 dias autoriza a suspensão das entregas.".into(),
         },
         Clausula {
             titulo: "Cláusula 8ª — Da execução por terceiros".into(),
-            texto: "A CONTRATADA não responde por resultado quando a execução divergir do projeto,                     quando houver substituição de materiais ou equipamentos especificados, ou quando                     a obra for conduzida sem o acompanhamento técnico previsto em aditivo.".into(),
+            texto: "A CONTRATADA não responde por resultado quando a execução divergir do projeto, quando houver substituição de materiais ou equipamentos especificados, ou quando a obra for conduzida sem o acompanhamento técnico previsto em aditivo.".into(),
         },
         Clausula {
             titulo: "Cláusula 9ª — Da proteção de dados e da confidencialidade".into(),
-            texto: "As partes tratarão os dados pessoais envolvidos conforme a Lei 13.709/2018 (LGPD),                     limitando-se às finalidades deste contrato, e manterão sigilo recíproco sobre                     informações técnicas, financeiras e de projeto.".into(),
+            texto: "As partes tratarão os dados pessoais envolvidos conforme a Lei 13.709/2018 (LGPD), limitando-se às finalidades deste contrato, e manterão sigilo recíproco sobre informações técnicas, financeiras e de projeto.".into(),
         },
         Clausula {
             titulo: "Cláusula 10ª — Do portfólio".into(),
-            texto: "A CONTRATANTE autoriza a CONTRATADA a divulgar imagens do resultado e a citar o                     projeto em portfólio, ressalvada a possibilidade de revogação por escrito.".into(),
+            texto: "A CONTRATANTE autoriza a CONTRATADA a divulgar imagens do resultado e a citar o projeto em portfólio, ressalvada a possibilidade de revogação por escrito.".into(),
         },
         Clausula {
             titulo: "Cláusula 11ª — Do foro e da assinatura".into(),
-            texto: "Fica eleito o foro da Comarca de Cachoeiro de Itapemirim/ES. As partes reconhecem                     a validade da assinatura eletrônica, nos termos da Lei 14.063/2020 e do art. 10,                     §2º da MP 2.200-2/2001.".into(),
+            texto: "Fica eleito o foro da Comarca de Cachoeiro de Itapemirim/ES. As partes reconhecem a validade da assinatura eletrônica, nos termos da Lei 14.063/2020 e do art. 10, §2º da MP 2.200-2/2001.".into(),
         },
     ]
 }

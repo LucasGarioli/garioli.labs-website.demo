@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import Nav from '$lib/Nav.svelte';
-  import { api } from '$lib/api.js';
+  import { api, MODO_DEMO, EMAIL_DONO } from '$lib/api.js';
 
   // Copy por modo. O painel e a área do cliente são a mesma porta: quem entra
   // é levado ao lugar certo pelo papel devolvido pela API, não pelo formulário.
@@ -81,6 +81,16 @@
     capsLock = false;
   }
 
+  // Atalho da demonstração: sem isto, quem chega de fora não tem como
+  // descobrir qual e-mail abre o painel do dono.
+  function preencherDono() {
+    modo = 'entrar';
+    email = EMAIL_DONO;
+    senha = 'demonstracao';
+    tocouEmail = true;
+    erro = '';
+  }
+
   function marcarCaps(e) {
     if (e.getModifierState) capsLock = e.getModifierState('CapsLock');
   }
@@ -129,6 +139,18 @@
         >{rotulo}</button>
       {/each}
     </div>
+
+    {#if MODO_DEMO && modo !== 'recuperar'}
+      <div class="dica-demo">
+        <span class="chip">Demonstração</span>
+        <p>
+          Nenhuma conta aqui é real e nenhuma senha é conferida. Entre com qualquer e-mail e uma
+          senha de 8 caracteres para ver a área do cliente — ou use
+          <strong>{EMAIL_DONO}</strong> para abrir o painel do dono.
+        </p>
+        <button type="button" onclick={preencherDono}>Preencher acesso do dono</button>
+      </div>
+    {/if}
 
     {#if modo === 'recuperar'}
       <p style="font-size:15px;line-height:1.6;max-width:46ch;border-left:2px solid var(--color-accent);padding-left:18px;margin:0 0 28px">
@@ -231,6 +253,52 @@
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     min-height: calc(100vh - 61px);
   }
+  .dica-demo {
+    border: 2px solid var(--color-accent);
+    padding: 16px 18px;
+    margin-bottom: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .dica-demo .chip {
+    font-family: var(--font-body);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: var(--color-accent);
+    color: var(--color-neutral-100);
+    padding: 3px 9px;
+  }
+  .dica-demo p {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--color-neutral-700);
+  }
+  .dica-demo strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+  .dica-demo button {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: transparent;
+    border: 2px solid var(--color-text);
+    color: var(--color-text);
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .dica-demo button:hover {
+    background: var(--color-text);
+    color: var(--color-neutral-100);
+  }
+
   .vitrine {
     background: var(--color-text);
     color: var(--color-neutral-100);

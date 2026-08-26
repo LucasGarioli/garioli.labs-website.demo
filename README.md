@@ -9,6 +9,9 @@ visual só do site público ao painel administrativo.
 > criados para exercitar as telas, não para descrever nenhum cliente real nem a
 > situação de nenhuma empresa. O painel avisa isso na própria interface. A
 > versão que roda o negócio é privada.
+>
+> A página publicada roda **inteiramente no navegador** — sem servidor, sem
+> banco. Veja [Dois backends, um front](#dois-backends-um-front).
 
 O percurso completo está aqui: alguém pede um orçamento pela triagem pública, o
 dono analisa e aprova no painel, a proposta é gerada, o cliente aceita, o
@@ -24,6 +27,30 @@ auditoria que não tem caminho de remoção.
 | `backend/src/store.rs` | trilha de auditoria append-only e o texto das cláusulas gerado dos dados do cliente |
 | `frontend/src/lib/Nav.svelte` | barra grudenta com scroll-spy escrito direto no DOM, fora do caminho reativo |
 | `frontend/src/routes/orcamento/` | triagem de 11 passos que não devolve preço ao cliente |
+
+## Dois backends, um front
+
+O front não sabe com quem está falando. `src/lib/api.js` escolhe entre duas
+implementações da mesma superfície:
+
+| | Quando | O que roda |
+| --- | --- | --- |
+| `api-http.js` | `VITE_API_BASE` definida | a API Axum de verdade, com cookie de sessão `HttpOnly` |
+| `api-demo.js` | sem `VITE_API_BASE` | um porte da API em JavaScript, dentro do navegador |
+
+É isso que deixa a demonstração ser um site estático: nada para hospedar além de
+arquivos, e ainda assim todas as telas funcionam — a triagem calcula faixa de
+preço, o aceite gera contrato, a assinatura fecha a trilha de auditoria.
+
+O que o porte preserva: as rotas, as formas de resposta, os códigos de erro, o
+cálculo da triagem, a separação cliente/dono (rota de dono responde 404) e a
+trilha append-only. O que ele não tem: hash Argon2id, cookie assinado e
+persistência — o estado vive em `sessionStorage` e some ao fechar a aba.
+**Qualquer** senha de 8 caracteres entra; `demo@exemplo.com` entra como dono.
+A tela de acesso diz isso e traz um botão que preenche o acesso do dono.
+
+A lógica que importa continua sendo a do Rust — é ela que roda em produção, e é
+para ela que vale olhar.
 
 ## Rodar
 
@@ -64,7 +91,10 @@ cd backend && cargo test
 frontend/
   src/lib/design-system.css   design system Modernist (tokens + componentes), copiado íntegro
   src/lib/app.css             utilitários do projeto (.display, .kicker, .btn-solid…)
-  src/lib/api.js              cliente da API — um método por endpoint
+  src/lib/api.js              escolhe o backend: HTTP real ou demonstração
+  src/lib/api-http.js         cliente da API Axum — um método por endpoint
+  src/lib/api-demo.js         porte da API em JS, roda no navegador (build de portfólio)
+  src/lib/api-erros.js        ErroApi e o desvio para /entrar, compartilhados pelos dois
   src/lib/content.js          textos institucionais (serviços, processo, rodapé)
   src/lib/Nav.svelte          barra de navegação
   src/lib/Footer.svelte       rodapé com dados da empresa e selo ARS
