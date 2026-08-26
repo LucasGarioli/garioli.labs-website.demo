@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "garioli-labs-demo",
+  "name": "garioli-labs-website-demo",
   "compatibility_date": "2026-08-25",
 
   // Worker só de assets: não há `main` nem `binding`, porque não existe código
