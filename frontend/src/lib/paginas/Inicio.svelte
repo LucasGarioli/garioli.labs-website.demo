@@ -345,11 +345,14 @@
     padding: 84px 48px;
   }
   .h1-hero {
-    font-size: 68px;
-    line-height: 0.98;
-    letter-spacing: -0.04em;
+    /* A manchete afirma uma coisa inteira, entao ela e' longa: 18ch a punham
+       em cinco linhas. Tres linhas cheias leem como paragrafo curto, que e'
+       o que ela e'. */
+    font-size: 58px;
+    line-height: 1;
+    letter-spacing: -0.035em;
     margin: 0 0 26px;
-    max-width: 18ch;
+    max-width: 24ch;
     text-wrap: pretty;
   }
   .h2-faixa { font-size: 40px; line-height: 1.05; margin: 0 0 42px; }
@@ -579,7 +582,7 @@
     .faixa { padding: 60px 32px; }
     .faixa-hero { padding: 66px 32px 54px; }
     .chamada { padding: 66px 32px; }
-    .h1-hero { font-size: 50px; }
+    .h1-hero { font-size: 44px; }
     .h2-faixa { font-size: 32px; margin-bottom: 32px; }
     .h2-chamada { font-size: 40px; }
     .grade-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }

@@ -43,6 +43,20 @@ a:hover { color: var(--color-accent-600); text-decoration: underline; }
   border: 2px solid var(--color-text); cursor: pointer; font-family: var(--font-body);
   text-decoration: none; display: inline-block;
 }
+/* 44 px e' a medida de alvo de toque que a Apple publica, e o WCAG 2.2 AA
+   pede 24 no minimo. Onde o ponteiro e' o dedo, todo botao chega la'. No
+   mouse nada muda: o cursor acerta 26 px sem esforco, e engordar a pagina
+   inteira por causa do celular estragaria a proporcao em tela grande. */
+/* Variante estreita: onde o botao divide a linha com um texto ao lado, os
+   16 px de respiro vertical dominam a linha inteira. */
+.btn-solid.compacto { padding: 12px 22px; }
+
+@media (pointer: coarse), (max-width: 620px) {
+  /* `.compacto` precisa aparecer aqui por nome: ele tem duas classes, e sem
+     isso a regra estreita de cima venceria a de toque por especificidade. */
+  .btn-solid, .btn-outline, .btn-solid.compacto { padding-block: 18px; }
+}
+
 .label {
   font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--color-neutral-700);

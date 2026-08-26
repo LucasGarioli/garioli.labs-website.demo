@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import Seo from '$lib/Seo.svelte';
+  import Orcamentos from '$lib/painel/Orcamentos.svelte';
   import { api, exigeSessao } from '$lib/api.js';
   import { rota, textos } from '$lib/conteudo/index.js';
 
@@ -82,7 +83,8 @@
         <button
           type="button"
           onclick={() => (view = m.id)}
-          style="display:flex;align-items:center;gap:10px;text-align:left;font-family:var(--font-body);font-size:13px;font-weight:{view === m.id ? 700 : 500};background:{view === m.id ? 'var(--color-neutral-800)' : 'transparent'};border:0;border-left:3px solid {view === m.id ? 'var(--color-accent-600)' : 'transparent'};padding:11px 14px;cursor:pointer;color:{view === m.id ? 'var(--color-neutral-100)' : 'var(--color-neutral-400)'}"
+          class="item-menu"
+          data-ativo={view === m.id}
         >
           <span style="flex:1">{m.label}</span>
         </button>
@@ -100,7 +102,7 @@
         <button
           type="button"
           onclick={sair}
-          style="align-self:flex-start;font-family:var(--font-body);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;background:transparent;border:0;padding:0;cursor:pointer;color:var(--color-accent-400)"
+          class="link-mini sair"
         >{t.atalhos.sair}</button>
       {/if}
     </div>
@@ -140,7 +142,7 @@
           </span>
           <span style="font-size:13px;color:{a.urgente ? 'var(--color-accent-700)' : 'var(--color-neutral-700)'};font-weight:{a.urgente ? 700 : 400}">{a.prazo}</span>
           {#if a.solicitacao_id}
-            <button type="button" onclick={() => aprovar(a.solicitacao_id)} style="font-family:var(--font-body);font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;background:transparent;border:0;cursor:pointer;color:var(--color-accent-700);text-align:left;padding:0">{a.cta}</button>
+            <button type="button" class="link-mini aprovar" onclick={() => aprovar(a.solicitacao_id)}>{a.cta}</button>
           {:else}
             <span style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;color:var(--color-accent-700)">{a.cta}</span>
           {/if}
@@ -171,6 +173,11 @@
       <p style="font-size:13px;line-height:1.6;color:var(--color-neutral-700);margin:28px 0 0;max-width:66ch">
         {t.notaPipeline}
       </p>
+
+    {:else if view === 'orcamentos'}
+      <!-- O gerador tem estado proprio (lista, formulario, previa) e nao
+           divide nada com o resto do painel: mora no seu componente. -->
+      <Orcamentos {lang} />
 
     {:else if view === 'financeiro'}
       <div class="faixa-3">
@@ -206,7 +213,7 @@
           <div style="height:8px;background:var(--color-neutral-300)">
             <div style="height:8px;background:var(--color-accent-600);width:{Math.min(tributos.percentual_do_limite, 100)}%"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-neutral-700);margin-top:7px">
+          <div class="legenda-teto">
             <span>{brl(tributos.acumulado_centavos / 100)} {t.acumulados}</span>
             <span>{t.doTeto(tributos.percentual_do_limite.toFixed(0), brl(tributos.limite_mei_centavos / 100))}</span>
           </div>
@@ -327,6 +334,55 @@
      reempilham, e cada tabela rola dentro de si mesma em vez de espremer
      colunas ate' um numero cair por cima do rotulo do lado. */
   .painel { min-height: 100vh; display: grid; grid-template-columns: 250px minmax(0, 1fr); }
+  /* Os dois extremos da barra de teto: em 360 px eles se encostavam, porque
+     `space-between` distribui o que sobra e nao ha' o que sobrar. Com quebra,
+     o segundo desce para a linha de baixo em vez de encavalar. */
+  .legenda-teto {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 2px 16px;
+    font-size: 12px;
+    color: var(--color-neutral-700);
+    margin-top: 7px;
+  }
+
+  .item-menu {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    background: transparent;
+    border: 0;
+    border-left: 3px solid transparent;
+    padding: 11px 14px;
+    cursor: pointer;
+    color: var(--color-neutral-400);
+  }
+  .item-menu[data-ativo='true'] {
+    font-weight: 700;
+    background: var(--color-neutral-800);
+    border-left-color: var(--color-accent-600);
+    color: var(--color-neutral-100);
+  }
+  .link-mini {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+  }
+  .sair { align-self: flex-start; color: var(--color-accent-400); }
+  .aprovar { font-size: 10.5px; letter-spacing: 0.12em; color: var(--color-accent-700); }
+
   .barra {
     background: var(--color-neutral-900);
     color: var(--color-neutral-100);
@@ -354,6 +410,14 @@
   .cartoes-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 
   .tabela { display: grid; grid-template-columns: var(--cols); gap: 18px; }
+
+  /* No dedo, 44 px de alvo. Nos botoes de texto quem cresce e' so' a area de
+     toque — o respiro entra e a margem negativa o desconta, entao o alvo fica
+     grande sem que a linha se desloque. */
+@media (pointer: coarse), (max-width: 620px) {
+    .item-menu { padding: 15px 14px; }
+    .link-mini { padding: 17px 8px; margin: -17px -8px; }
+  }
 
   @media (max-width: 900px) {
     .painel { grid-template-columns: minmax(0, 1fr); }

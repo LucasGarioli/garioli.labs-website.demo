@@ -547,6 +547,11 @@
     background: rgba(255, 86, 60, 0.08);
   }
   .vistas .zoom { min-width: 32px; text-align: center; font-size: 13px; }
+  /* Girar o modelo com o dedo exige acertar o botao com o dedo. */
+@media (pointer: coarse), (max-width: 620px) {
+    .vistas button { padding: 13px 14px; }
+    .vistas .zoom { min-width: 44px; }
+  }
 
   canvas {
     display: block;

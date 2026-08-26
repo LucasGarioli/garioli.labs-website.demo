@@ -79,6 +79,34 @@ export const REGRA_CAMPO = {
   email: { valida: emailValido, mascara: (v) => v, erro: 'email' }
 };
 
+/** Que teclado o celular abre, e o que o navegador pode preencher sozinho.
+ *
+ *  Quem digita um CPF num teclado alfabético digita errado — e a máscara não
+ *  salva quem não consegue achar o número. O `type` fica em `text` onde há
+ *  máscara: `type="number"` recusa os pontos e traços que a máscara escreve,
+ *  e `inputmode` abre o mesmo teclado sem esse efeito colateral.
+ *
+ *  Vale para os campos das duas frentes — a triagem pública e a qualificação
+ *  das partes —, porque é a natureza do campo que manda, não a página. */
+const TECLADO = {
+  cnpj: { inputmode: 'numeric', autocomplete: 'off' },
+  cpf_rep: { inputmode: 'numeric', autocomplete: 'off' },
+  fone: { inputmode: 'tel', autocomplete: 'tel' },
+  email: { inputmode: 'email', autocomplete: 'email' },
+  nome: { autocomplete: 'name' },
+  representante: { autocomplete: 'name' },
+  razao: { autocomplete: 'organization' },
+  org: { autocomplete: 'organization' },
+  cargo: { autocomplete: 'organization-title' },
+  endereco: { autocomplete: 'street-address' },
+  cidade: { autocomplete: 'address-level2' }
+};
+
+/** Atributos de teclado de um campo, ou nada se ele for texto comum. */
+export function teclado(chave) {
+  return TECLADO[chave] ?? {};
+}
+
 /** Um campo sem regra própria só precisa ter conteúdo de gente: duas letras
  *  não são um endereço nem uma razão social. */
 export function campoValido(chave, valor) {

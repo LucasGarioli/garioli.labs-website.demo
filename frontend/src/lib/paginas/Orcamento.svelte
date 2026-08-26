@@ -2,6 +2,7 @@
   import Seo from '$lib/Seo.svelte';
   import { api } from '$lib/api.js';
   import { rota, textos } from '$lib/conteudo/index.js';
+  import { teclado } from '$lib/documento.js';
 
   let { lang = 'pt' } = $props();
   const t = $derived(textos(lang).paginas.orcamento);
@@ -154,9 +155,11 @@
                 <span class="label" style="letter-spacing:0.14em">{c.label}</span>
                 <input
                   type="text"
+                  class="entrada"
                   placeholder={c.ph}
                   bind:value={contato[c.k]}
-                  style="font-size:15px;padding:13px 14px;border:2px solid var(--color-divider);background:var(--color-surface);color:var(--color-text);outline:none;font-family:var(--font-body)"
+                  {...teclado(c.k)}
+                  style="padding:13px 14px;border:2px solid var(--color-divider);background:var(--color-surface);color:var(--color-text);outline:none"
                 />
               </label>
             {/each}

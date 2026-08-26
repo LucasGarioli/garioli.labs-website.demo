@@ -115,7 +115,8 @@
           type="button"
           aria-pressed={modo === id}
           onclick={() => trocarModo(id)}
-          style="flex:1;font-family:var(--font-body);font-size:11.5px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;padding:13px 10px;border:0;cursor:pointer;background:{modo === id ? 'var(--color-text)' : 'transparent'};color:{modo === id ? 'var(--color-neutral-100)' : 'var(--color-text)'}"
+          class="modo"
+          data-ativo={modo === id}
         >{rotulo}</button>
       {/each}
     </div>
@@ -157,7 +158,7 @@
             <button
               type="button"
               onclick={() => (senhaVisivel = !senhaVisivel)}
-              style="font-family:var(--font-body);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;background:transparent;border:0;padding:0;cursor:pointer;color:var(--color-accent-700)"
+              class="link-mini"
             >{senhaVisivel ? t.ocultar : t.mostrar}</button>
           </div>
           <input
@@ -189,7 +190,7 @@
         <button
           type="button"
           onclick={() => trocarModo('recuperar')}
-          style="align-self:flex-start;font-family:var(--font-body);font-size:12.5px;background:transparent;border:0;padding:0;cursor:pointer;color:var(--color-accent-700);text-decoration:underline"
+          class="link-mini esqueci"
         >{t.esqueci}</button>
       </form>
     {/if}
@@ -210,6 +211,46 @@
 </div>
 
 <style>
+  /* Estado por atributo, desenho por classe: e' a media query de toque que
+     precisa alcancar o respiro destes tres, e regra inline ela nao alcanca. */
+  .modo {
+    flex: 1;
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 13px 10px;
+    border: 0;
+    cursor: pointer;
+    background: transparent;
+    color: var(--color-text);
+  }
+  .modo[data-ativo='true'] {
+    background: var(--color-text);
+    color: var(--color-neutral-100);
+  }
+  .link-mini {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: var(--color-accent-700);
+  }
+  .esqueci {
+    align-self: flex-start;
+    font-size: 12.5px;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 400;
+    text-decoration: underline;
+  }
+
   .tela {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -227,5 +268,14 @@
   @media (max-width: 860px) {
     .tela { grid-template-columns: minmax(0, 1fr); }
     .vitrine { padding: 46px 40px 60px; }
+  }
+
+  /* Um botao de texto nao pode virar um bloco de 44 px de altura sem estragar
+     a linha em que ele mora. Entao quem cresce e' so' a area de toque: o
+     respiro entra e a margem negativa o desconta, de modo que o alvo fica
+     grande e o desenho fica igual. */
+@media (pointer: coarse), (max-width: 620px) {
+    .modo { padding: 16px 10px; }
+    .link-mini { padding: 17px 8px; margin: -17px -8px; }
   }
 </style>

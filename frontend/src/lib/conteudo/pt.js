@@ -66,7 +66,10 @@ export default {
   },
 
   hero: {
-    titulo: 'Som que se entende. Luz que faz sentido.',
+    // O H1 e' o sinal de busca mais forte da pagina: ele nomeia as disciplinas
+    // e afirma o diferencial no mesmo folego. Uma frase bonita que nao afirma
+    // nada desperdica o unico lugar onde as duas coisas cabem juntas.
+    titulo: 'Projeto de acústica, som e luz que se resolve no cálculo — não na obra.',
     sub:
       'Projetos de acústica, sonorização, iluminação e vídeo para igrejas, auditórios e ' +
       'estúdios. Cálculo antes da compra — para você investir uma vez, no que resolve.',
@@ -393,6 +396,32 @@ export default {
       valeAte: (data) => `válida até ${data}`,
       restam: (dias) =>
         dias <= 0 ? 'expirada' : dias === 1 ? 'último dia' : `faltam ${dias} dias`,
+      objeto: 'Objeto',
+      diagnostico: 'Diagnóstico técnico',
+      diagnosticoNota:
+        'O que foi observado na visita técnica. É o que sustenta cada linha do escopo abaixo.',
+      diretrizes: 'Diretrizes do projeto',
+      entregaveis: 'Entregáveis por disciplina',
+      prazo: 'Prazo de entrega',
+      prazoTexto: (d) => `${d} dias úteis`,
+      incluso: 'Está incluso',
+      naoIncluso: 'Não está incluso',
+      criterio: 'Critério de aceite',
+      planoTitulo: 'Plano de pagamento',
+      aditivoSec: {
+        cortesia: 'Concedido integralmente como cortesia nesta proposta',
+        valorDe: 'Valor de referência',
+        dimensao: 'Dimensão',
+        condicoes: 'Condições',
+        validade: (m) => `Válido por ${m} meses a partir da assinatura do contrato.`
+      },
+      impressao: {
+        titulo: 'Para aceitar esta proposta',
+        texto:
+          'Abra o endereço abaixo no celular ou no computador. Ele leva a este mesmo ' +
+          'documento na internet, com o botão de aceite — e, logo depois, ao contrato.',
+        clique: 'Aceitar pela internet'
+      },
       escopo: 'Escopo',
       subtotal: 'Subtotal do escopo',
       desconto: (pct) => `Desconto de ${pct}%`,
@@ -478,6 +507,7 @@ export default {
       vistas: [
         { id: 'home', label: 'Hoje', kicker: 'Painel do dono', titulo: 'O que exige você agora' },
         { id: 'pipeline', label: 'Pipeline', kicker: 'Comercial', titulo: 'Da triagem à entrega' },
+        { id: 'orcamentos', label: 'Orçamentos', kicker: 'Documento comercial', titulo: 'Escrever, enviar e acompanhar' },
         { id: 'financeiro', label: 'Financeiro', kicker: 'Recebimentos', titulo: 'Previsto, recebido e vencido' },
         { id: 'impostos', label: 'Impostos', kicker: 'Planejamento tributário', titulo: 'Quanto custa cada regime' },
         { id: 'projetos', label: 'Projetos', kicker: 'Execução', titulo: 'Frentes em andamento' },
@@ -485,6 +515,87 @@ export default {
         { id: 'documentos', label: 'Modelos', kicker: 'Biblioteca', titulo: 'Propostas e contratos versionados' },
         { id: 'auditoria', label: 'Auditoria', kicker: 'Registro', titulo: 'Trilha de aceites e assinaturas' }
       ],
+      orcamentos: {
+        novo: 'Novo orçamento',
+        voltar: 'Voltar à lista',
+        vazio: 'Nenhum orçamento ainda. O primeiro já nasce com o modelo da casa preenchido.',
+        colunas: { numero: 'Número', cliente: 'Cliente', situacao: 'Situação', total: 'Total', validade: 'Validade' },
+        situacoes: {
+          rascunho: 'Rascunho',
+          enviada: 'Enviada',
+          aceita: 'Aceita',
+          expirada: 'Expirada'
+        },
+        // O que cada acao faz precisa caber num botao e nao mentir: "copiar
+        // link" copia o endereco que o cliente abre, nao o do painel.
+        acoes: {
+          editar: 'Editar',
+          abrir: 'Ver como o cliente vê',
+          copiar: 'Copiar link do cliente',
+          copiado: 'Link copiado',
+          enviar: 'Marcar como enviada',
+          pdf: 'Exportar PDF',
+          salvar: 'Salvar',
+          criar: 'Criar orçamento',
+          salvo: 'Salvo.'
+        },
+        travada: 'Proposta já aceita — o contrato saiu deste documento, então ele não se edita mais.',
+        expiraEm: (d) => (d > 0 ? `expira em ${d} dia${d === 1 ? '' : 's'}` : 'expirada'),
+        itens: (n) => `${n} ${n === 1 ? 'item' : 'itens'} de escopo`,
+        secoes: {
+          cliente: 'Cliente',
+          documento: 'O documento',
+          diagnostico: 'Diagnóstico técnico',
+          escopo: 'Escopo e investimento',
+          condicoes: 'Condições comerciais',
+          aditivo: 'Aditivo técnico',
+          avancado: 'Texto padrão do documento'
+        },
+        campos: {
+          instituicao: 'Instituição ou empresa',
+          cidade: 'Cidade e estado',
+          representante: 'Quem responde pelo cliente',
+          maps_url: 'Link do local no mapa',
+          titulo: 'Título do projeto',
+          resumo: 'Resumo em uma frase',
+          disciplinas: 'Disciplinas contratadas',
+          objeto: 'Objeto do contrato',
+          diagnostico: 'Um achado por linha',
+          criterio: 'Critério de aceite',
+          incluso: 'O que está incluso',
+          naoIncluso: 'O que não está incluso',
+          prazoDias: 'Prazo (dias úteis)',
+          prazoCondicao: 'Condição do prazo',
+          descontoPct: 'Desconto (%)',
+          descontoMotivo: 'Motivo do desconto',
+          entradaPct: 'Entrada (%)',
+          parcelas: 'Parcelas após a entrada',
+          avistaPct: 'Desconto à vista (%)',
+          validadeDias: 'Validade (dias)',
+          itemTitulo: 'Frente',
+          itemDescricao: 'O que entra nela',
+          itemValor: 'Valor (R$)',
+          addItem: 'Adicionar frente',
+          removerItem: 'Remover',
+          aditivoLigado: 'Incluir aditivo técnico nesta proposta',
+          aditivoCortesia: 'Conceder o aditivo como cortesia',
+          aditivoDimensao: 'Dimensão do aditivo',
+          aditivoCondicoes: 'Condições do aditivo',
+          aditivoValidade: 'Validade do aditivo (meses)'
+        },
+        resumo: {
+          titulo: 'O que o cliente vai ver',
+          subtotal: 'Subtotal',
+          desconto: 'Desconto',
+          total: 'Total',
+          plano: 'Plano de pagamento',
+          avista: 'À vista',
+          economia: 'economia de',
+          aditivo: 'Aditivo técnico',
+          cortesia: 'concedido como cortesia',
+          semItens: 'Adicione ao menos uma frente para ver os números.'
+        }
+      },
       atalhos: {
         site: 'Site institucional',
         cliente: 'Ver como cliente',

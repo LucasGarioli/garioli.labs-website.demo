@@ -701,44 +701,122 @@ const brl = (centavos) =>
  *  na tela quando a pessoa clicou em aceitar. As datas nascem do deslocamento
  *  guardado na proposta, de modo que a validade que o cliente lê é a mesma que
  *  o dono vê expirando no funil. */
+/** O plano de pagamento inteiro, derivado do total.
+ *
+ *  `entrada_pct` a zero devolve o parcelamento simples, em partes iguais.
+ *  Acima de zero, o documento vira entrada + N parcelas — 40/30/30 e' o
+ *  formato usado, e ele nao cabe num modelo de parcelas iguais.
+ *
+ *  A ultima parcela absorve o resto da divisao. Sem isso, tres parcelas
+ *  arredondadas de um total impar somam um centavo a mais ou a menos que o
+ *  total impresso duas linhas acima — e o cliente ve os dois numeros. */
+function planoDePagamento(total, entradaPct, parcelas) {
+  const entrada = entradaPct > 0 ? Math.round((total * entradaPct) / 100) : 0;
+  const restante = total - entrada;
+  const n = Math.max(1, parcelas);
+  const parcela = Math.round(restante / n);
+  const ultima = restante - parcela * (n - 1);
+
+  const linhas = [];
+  if (entrada > 0) {
+    linhas.push({ rotulo: `Entrada (${entradaPct}%), na assinatura`, valor: entrada });
+  }
+  for (let i = 0; i < n; i++) {
+    const valor = i === n - 1 ? ultima : parcela;
+    const dias = entrada > 0 ? (i + 1) * 30 : i * 30;
+    const quando = dias === 0 ? 'na assinatura' : `${dias} dias após a assinatura`;
+    linhas.push({ rotulo: `Parcela ${i + 1} de ${n}, ${quando}`, valor });
+  }
+  return { entrada, parcela, ultima, n, linhas };
+}
+
 function propostaPublica(p) {
   const bruto = p.escopo.reduce((soma, e) => soma + e.centavos, 0);
   const desconto = Math.round((bruto * p.desconto_pct) / 100);
   const total = bruto - desconto;
-  const parcela = Math.round(total / p.parcelas);
+  const entradaPct = p.entrada_pct ?? 0;
+  const plano = planoDePagamento(total, entradaPct, p.parcelas);
+  const parcela = plano.parcela;
   const avista = total - Math.round((total * p.desconto_avista_pct) / 100);
 
   const enviada = emDias(p.enviada_em_dias);
   const expira = emDias(p.enviada_em_dias + p.validade_dias);
 
   const pagamento = {
+    entrada_pct: entradaPct,
+    entrada: brl(plano.entrada),
+    entrada_centavos: plano.entrada,
     parcelas: p.parcelas,
     parcela: brl(parcela),
     parcela_centavos: parcela,
+    parcela_final: brl(plano.ultima),
+    parcela_final_centavos: plano.ultima,
+    /// O plano linha a linha: a tela e o PDF imprimem isto, nao recalculam.
+    linhas: plano.linhas.map((l) => ({ rotulo: l.rotulo, valor: brl(l.valor), centavos: l.valor })),
+    economia_avista: brl(total - avista),
     avista: brl(avista),
     avista_centavos: avista,
     desconto_avista_pct: p.desconto_avista_pct
   };
 
+  /// O aditivo tem valor mesmo sendo cortesia: e' o numero que mede a
+  /// gentileza. Sem ele, "cortesia" e' so' uma palavra.
+  const aditivo = p.aditivo
+    ? {
+        titulo: p.aditivo.titulo,
+        resumo: p.aditivo.resumo,
+        cortesia: p.aditivo.cortesia,
+        dimensao: p.aditivo.dimensao,
+        condicoes: p.aditivo.condicoes,
+        validade_meses: p.aditivo.validade_meses,
+        itens: p.aditivo.itens.map((i) => ({ t: i.t, d: i.d, valor: brl(i.centavos) })),
+        total: brl(p.aditivo.itens.reduce((soma, i) => soma + i.centavos, 0))
+      }
+    : null;
+
   /// A condição que entra no contrato descreve a forma escolhida, não as duas.
   /// Antes do aceite não há forma escolhida, e o contrato não existe ainda.
   const avistaEscolhido = p.forma_pagamento === 'avista';
   const efetivo = avistaEscolhido ? avista : total;
+  const parceladoTexto =
+    entradaPct > 0
+      ? `Pagamento em ${plano.n + 1} vezes: entrada de ${brl(plano.entrada)} (${entradaPct}%) na ` +
+        `assinatura e ${plano.n} ${plano.n === 1 ? 'parcela' : 'parcelas'} de ${brl(parcela)}, ` +
+        `a cada 30 dias.`
+      : `Pagamento em ${plano.n} parcelas de ${brl(parcela)}: a primeira na assinatura e ` +
+        (plano.n === 2 ? 'a segunda 30 dias depois.' : 'as demais a cada 30 dias.');
   const condicoes = avistaEscolhido
     ? `Pagamento à vista de ${brl(avista)} na assinatura, já aplicado o desconto de ` +
       `${p.desconto_avista_pct}% sobre o total de ${brl(total)}.`
-    : `Pagamento em ${p.parcelas} parcelas de ${brl(parcela)}: a primeira na assinatura e ` +
-      (p.parcelas === 2 ? 'a segunda 30 dias depois.' : 'as demais a cada 30 dias.');
+    : parceladoTexto;
 
   return {
     id: p.id,
+    numero: p.numero ?? p.id,
     instituicao: p.instituicao,
     cidade: p.cidade,
     maps_url: p.maps_url,
+    representante: p.representante ?? null,
+    titulo: p.titulo ?? null,
+    resumo: p.resumo ?? null,
+    disciplinas: p.disciplinas ?? null,
+    objeto: p.objeto ?? null,
+    diagnostico: p.diagnostico ?? [],
+    diretrizes: p.diretrizes ?? [],
+    criterio_aceite: p.criterio_aceite ?? null,
+    entregaveis: p.entregaveis ?? [],
+    formato_entrega: p.formato_entrega ?? 'PDF',
+    prazo_dias: p.prazo_dias ?? null,
+    prazo_condicao: p.prazo_condicao ?? null,
+    incluso: p.incluso ?? null,
+    nao_incluso: p.nao_incluso ?? null,
+    aditivo,
+    situacao: p.situacao ?? (p.aceita_em ? 'aceita' : 'enviada'),
     escopo: p.escopo.map((e) => ({ titulo: e.titulo, descricao: e.descricao, valor: brl(e.centavos) })),
     premissas: p.premissas,
     subtotal: brl(bruto),
     desconto_pct: p.desconto_pct,
+    desconto_motivo: p.desconto_motivo ?? null,
     desconto: brl(desconto),
     total: brl(total),
     total_centavos: total,
@@ -753,6 +831,144 @@ function propostaPublica(p) {
     forma_pagamento: p.forma_pagamento,
     observacoes: p.observacoes
   };
+}
+
+// ---------- o gerador de orçamentos ----------
+
+/** O documento padrão da casa.
+ *
+ *  Um orçamento não começa numa folha em branco: começa no modelo, e o que se
+ *  escreve por cima é só o que muda de cliente para cliente. É por isso que a
+ *  proposta sai no mesmo dia da visita — o diagnóstico é do cliente, o resto
+ *  do documento já existe. */
+const MODELO_PROPOSTA = {
+  titulo: 'Projeto integrado de infraestrutura audiovisual',
+  disciplinas: 'Acústica, áudio, projeção, iluminação, rede e transmissão',
+  objeto:
+    'Elaboração de projeto técnico integrado para modernização da infraestrutura ' +
+    'audiovisual do espaço, com compatibilização entre as frentes contratadas e ' +
+    'integração à instalação elétrica existente.',
+  diagnostico: [],
+  diretrizes: [
+    {
+      t: 'Integração antes de equipamento',
+      d: 'As frentes são projetadas como um sistema único, não como compras separadas.'
+    },
+    {
+      t: 'Acústica como ponto de partida',
+      d: 'Nenhum sistema de som resolve um ambiente não tratado: a acústica define o dimensionamento do áudio.'
+    },
+    {
+      t: 'Operação simples e confiável',
+      d: 'Cadeias de sinal enxutas, presets claros e menos pontos de falha.'
+    },
+    {
+      t: 'Otimização do investimento',
+      d: 'Especificação de equipamentos disponíveis no mercado nacional, com alternativas por faixa de investimento.'
+    }
+  ],
+  criterio_aceite:
+    'O projeto é considerado entregue quando as plantas executivas, o diagrama de fluxo ' +
+    'de sinal, o memorial descritivo e a lista técnica das frentes contratadas forem ' +
+    'disponibilizados e a sessão de apresentação técnica for realizada.',
+  entregaveis: [],
+  formato_entrega: 'PDF',
+  prazo_dias: 45,
+  prazo_condicao: 'Entrega única, após assinatura do contrato e confirmação da primeira parcela.',
+  incluso:
+    'Sessão de apresentação técnica das frentes contratadas, duas rodadas de revisão ' +
+    'solicitadas em até 15 dias da entrega e referências de fornecimento na lista técnica.',
+  nao_incluso:
+    'Execução de obra, cotação e negociação com fornecedores, fornecimento e instalação de ' +
+    'equipamentos, projeto elétrico e estrutural, licenças e a configuração operacional dos sistemas.',
+  premissas: [],
+  escopo: [],
+  desconto_pct: 0,
+  desconto_motivo: null,
+  entrada_pct: 40,
+  parcelas: 2,
+  desconto_avista_pct: 5,
+  validade_dias: 15,
+  aditivo: null
+};
+
+/** O próximo número de proposta do ano, sem buraco e sem repetição. */
+function proximoNumero() {
+  const ano = new Date().getFullYear();
+  const usados = dados.propostas
+    .map((p) => /^PROP\. (\d+)\/(\d+)$/.exec(p.numero ?? ''))
+    .filter((m) => m && Number(m[2]) === ano)
+    .map((m) => Number(m[1]));
+  const n = (usados.length ? Math.max(...usados) : 0) + 1;
+  return { numero: `PROP. ${String(n).padStart(4, '0')}/${ano}`, id: `PRJ-${ano}-${String(n).padStart(4, '0')}` };
+}
+
+/** Só o que a lista do painel precisa mostrar — a proposta inteira é grande, e
+ *  a lista não desenha nenhum dos textos longos. */
+function resumoProposta(p) {
+  const pub = propostaPublica(p);
+  return {
+    id: p.id,
+    numero: pub.numero,
+    instituicao: p.instituicao,
+    cidade: p.cidade,
+    titulo: p.titulo ?? null,
+    situacao: pub.situacao,
+    itens: p.escopo.length,
+    total: pub.total,
+    total_centavos: pub.total_centavos,
+    enviada_em: pub.enviada_em,
+    expira_em: pub.expira_em,
+    dias_restantes: pub.dias_restantes,
+    aceita_em: p.aceita_em,
+    /// O link que vai para o cliente, montado num lugar só.
+    link: `/proposta?id=${encodeURIComponent(p.id)}`
+  };
+}
+
+/** Uma proposta nova: o modelo da casa por baixo, o que veio do formulário
+ *  por cima, e a numeração e as datas por conta da API. */
+function novaProposta(rascunho = {}) {
+  const { numero, id } = proximoNumero();
+  return {
+    ...MODELO_PROPOSTA,
+    ...rascunho,
+    id,
+    numero,
+    situacao: 'rascunho',
+    /// Rascunho ainda não foi enviado, então a validade ainda não correu.
+    enviada_em_dias: 0,
+    aceita_em: null,
+    forma_pagamento: null,
+    observacoes: null
+  };
+}
+
+/** Campos que o gerador pode reescrever. Tudo o que não estiver aqui — a
+ *  numeração, o aceite, a forma de pagamento — é da API, não do formulário. */
+const CAMPOS_EDITAVEIS = [
+  'instituicao', 'cidade', 'maps_url', 'representante', 'titulo', 'resumo', 'disciplinas',
+  'objeto', 'diagnostico', 'diretrizes', 'criterio_aceite', 'entregaveis', 'formato_entrega',
+  'prazo_dias', 'prazo_condicao', 'incluso', 'nao_incluso', 'premissas', 'escopo',
+  'desconto_pct', 'desconto_motivo', 'entrada_pct', 'parcelas', 'desconto_avista_pct',
+  'validade_dias', 'aditivo'
+];
+
+/** O que impede uma proposta de sair pela porta.
+ *
+ *  Vale na criação e no envio: um documento sem cliente, sem escopo ou com um
+ *  item de valor zero não é um orçamento incompleto — é um orçamento errado,
+ *  e ele sai com o nome da empresa em cima. */
+function conferirProposta(p) {
+  if (!(p.instituicao ?? '').trim()) throw new ErroApi(422, 'A proposta precisa do nome do cliente');
+  if (!Array.isArray(p.escopo) || p.escopo.length === 0) {
+    throw new ErroApi(422, 'A proposta precisa de ao menos um item de escopo');
+  }
+  const vazio = p.escopo.find((e) => !(e.titulo ?? '').trim() || !(e.centavos > 0));
+  if (vazio) throw new ErroApi(422, 'Todo item de escopo precisa de título e valor maior que zero');
+  if (p.desconto_pct < 0 || p.desconto_pct > 100) throw new ErroApi(422, 'Desconto fora de 0 a 100%');
+  if (p.entrada_pct < 0 || p.entrada_pct > 100) throw new ErroApi(422, 'Entrada fora de 0 a 100%');
+  if (!(p.parcelas >= 1)) throw new ErroApi(422, 'A proposta precisa de ao menos uma parcela');
 }
 
 // ---------- contrato (porte de store.rs::clausulas) ----------
@@ -1624,6 +1840,79 @@ export const api = {
     const p = dados.propostas.find((x) => x.id === id);
     if (!p) throw new ErroApi(404, 'Proposta não encontrada');
     return propostaPublica(p);
+  },
+
+  // ----- gerador de orçamentos (só o dono) -----
+
+  async listarPropostas() {
+    await espera();
+    exigeDono();
+    return dados.propostas.map(resumoProposta);
+  },
+
+  /** O modelo da casa, para o formulário abrir preenchido. */
+  async modeloProposta() {
+    await espera();
+    exigeDono();
+    return JSON.parse(JSON.stringify(MODELO_PROPOSTA));
+  },
+
+  /** Os números de um rascunho, sem gravar nada.
+   *
+   *  O formulário precisa mostrar total, desconto e plano de pagamento
+   *  enquanto se digita. Se ele calculasse isso por conta própria, existiriam
+   *  duas contas para o mesmo dinheiro — e um dia elas discordariam na frente
+   *  do cliente. Então quem calcula a prévia é o mesmo código que emite o
+   *  documento. */
+  async previaProposta(rascunho = {}) {
+    exigeDono();
+    const p = { ...MODELO_PROPOSTA, ...rascunho, id: 'previa', numero: 'prévia', enviada_em_dias: 0 };
+    if (!Array.isArray(p.escopo) || p.escopo.length === 0) return null;
+    return propostaPublica(p);
+  },
+
+  async criarProposta(rascunho = {}) {
+    await espera();
+    const dono = exigeDono();
+    const p = novaProposta(rascunho);
+    conferirProposta(p);
+    dados.propostas.unshift(p);
+    salvar();
+    registrar('Proposta', `Proposta ${p.numero} criada para ${p.instituicao} por ${dono.email}`);
+    return resumoProposta(p);
+  },
+
+  async salvarProposta(id, campos = {}) {
+    await espera();
+    exigeDono();
+    const p = dados.propostas.find((x) => x.id === id);
+    if (!p) throw new ErroApi(404, 'Proposta não encontrada');
+    /// Proposta aceita não se edita: o contrato foi gerado a partir dela, e
+    /// mexer na origem depois do aceite é reescrever o que a outra parte
+    /// assinou. Para mudar o escopo existe aditivo, não edição silenciosa.
+    if (p.aceita_em) throw new ErroApi(409, 'Proposta já aceita não pode ser editada');
+    for (const k of CAMPOS_EDITAVEIS) {
+      if (k in campos) p[k] = campos[k];
+    }
+    conferirProposta(p);
+    salvar();
+    registrar('Proposta', `Proposta ${p.numero} editada`);
+    return resumoProposta(p);
+  },
+
+  async enviarProposta(id) {
+    await espera();
+    const dono = exigeDono();
+    const p = dados.propostas.find((x) => x.id === id);
+    if (!p) throw new ErroApi(404, 'Proposta não encontrada');
+    if (p.aceita_em) throw new ErroApi(409, 'Proposta já aceita');
+    conferirProposta(p);
+    p.situacao = 'enviada';
+    /// A validade passa a correr a partir de agora, não da criação.
+    p.enviada_em_dias = 0;
+    salvar();
+    registrar('Proposta', `Proposta ${p.numero} enviada a ${p.instituicao} por ${dono.email}`, true);
+    return resumoProposta(p);
   },
 
   async aceitarProposta(id, { observacoes, forma } = {}) {

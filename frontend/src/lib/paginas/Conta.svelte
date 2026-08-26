@@ -38,7 +38,8 @@
     <button
       type="button"
       onclick={() => (tab = aba.id)}
-      style="font-family:var(--font-body);font-size:11.5px;letter-spacing:0.1em;text-transform:uppercase;font-weight:{tab === aba.id ? 700 : 500};background:transparent;border:0;border-bottom:2px solid {tab === aba.id ? 'var(--color-accent-600)' : 'transparent'};padding:6px 0;cursor:pointer;color:{tab === aba.id ? 'var(--color-text)' : 'var(--color-neutral-600)'}"
+      class="aba"
+      data-ativa={tab === aba.id}
     >{aba.label}</button>
   {/each}
   <span style="flex:1"></span>
@@ -76,7 +77,7 @@
             {/each}
           </div>
           <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:22px;padding-top:20px;border-top:1px solid var(--color-divider)">
-            <a class="btn-solid" style="padding:12px 22px" href="{rota('/proposta', lang)}?id={p.id}">{p.cta}</a>
+            <a class="btn-solid compacto" href="{rota('/proposta', lang)}?id={p.id}">{p.cta}</a>
             <span style="font-size:13px;color:var(--color-neutral-700)">{p.pendencia}</span>
           </div>
         </div>
@@ -144,6 +145,30 @@
 <style>
   /* A pagina inteira era estilo inline, e regra inline nao aceita media query:
      as quatro grades de largura fixa viraram classe para poder respirar. */
+  .aba {
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 6px 0;
+    cursor: pointer;
+    color: var(--color-neutral-600);
+  }
+  .aba[data-ativa='true'] {
+    font-weight: 700;
+    border-bottom-color: var(--color-accent-600);
+    color: var(--color-text);
+  }
+  /* No dedo a aba precisa de 44 px de altura; o sublinhado desce junto, que e'
+     o desenho certo — a aba fica com a altura da tira. */
+@media (pointer: coarse), (max-width: 620px) {
+    .aba { padding: 15px 0; }
+  }
+
   .abas {
     display: flex;
     align-items: center;

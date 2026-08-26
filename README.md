@@ -44,6 +44,7 @@ SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público
 - [O domínio: da triagem à assinatura](#o-domínio-da-triagem-à-assinatura)
   - [Estados de uma solicitação](#estados-de-uma-solicitação)
   - [A regra de preço](#a-regra-de-preço)
+  - [O gerador de orçamentos](#o-gerador-de-orçamentos)
 - [Decisões de projeto](#decisões-de-projeto)
 - [Segurança](#segurança)
 - [Estrutura](#estrutura)
@@ -116,11 +117,24 @@ uma única divisa inclinada que o leitor arrasta. A divisa é um
 ganha arrasto de mouse, arrasto por toque, setas do teclado, anel de foco e nome
 acessível sem uma linha de `pointermove` escrita à mão.
 
+**A sala é a mesma das pranchas.** A vista não é um salão genérico: é o interior
+do estudo de caso desta página, projetado ponto a ponto a partir de
+`desenhos/projeto.js` por uma projeção de um ponto, com a câmera onde fica a
+mesa de som. A plateia é o leque real — cada fileira é um arco de raio
+verdadeiro, e os quatro corredores aparecem porque os blocos vêm do modelo. O
+que está pendurado está pendurado na cota do projeto: arranjos L/R de dezesseis
+caixas com a curvatura que a última fileira exige, cluster central, subgraves
+voados e de piso, preenchimento de primeira fila, retornos de palco, o primeiro
+anel de delay sobre a plateia — o segundo fica atrás da lente —, painel de LED
+com telas laterais, treliças de cena e a ilha de operação, com cabine de
+transmissão de um lado e sala de racks do outro. Mudar a geometria em
+`projeto.js` muda esta figura junto com as quatro pranchas.
+
 Os dois lados são SVG desenhado, não fotografia: gradiente por superfície,
-oclusão de ambiente nos cantos, grão de sensor por cima de tudo e as fileiras de
-bancos derivadas da perspectiva em vez de digitadas uma a uma. O componente
-aceita `antes` e `depois` como URLs — no dia em que houver foto do salão real,
-ela entra sem mexer no mecanismo.
+oclusão de ambiente nos cantos, fumaça para o feixe existir, grão de sensor por
+cima de tudo e silhuetas de 1,75 m no palco, que é de onde sai a escala. O
+componente aceita `antes` e `depois` como URLs — no dia em que houver foto do
+salão real, ela entra sem mexer no mecanismo.
 
 ### As pranchas e o glossário
 
@@ -405,6 +419,39 @@ Certas respostas levantam alerta em vez de preço — área "não sei" exige vis
 isolamento e tratamento pedidos juntos exigem confirmar obra civil, reclamação
 de vizinhos exige checar a exigência municipal de ruído.
 
+### O gerador de orçamentos
+
+A aba **Orçamentos** do painel do dono escreve a proposta inteira: cliente,
+título, resumo, objeto, diagnóstico técnico linha a linha, diretrizes, escopo
+item a item em reais, entregáveis por disciplina, prazo, o que está e o que não
+está incluso, critério de aceite, desconto com motivo, entrada, parcelas,
+desconto à vista, validade e o aditivo técnico — com a opção de concedê-lo como
+cortesia. O primeiro orçamento já nasce com o modelo da casa preenchido; o texto
+padrão fica atrás de um `<details>`, porque quase nunca muda.
+
+Enquanto se digita, um espelho ao lado mostra **o que o cliente vai ver**:
+subtotal, desconto, total, o plano de pagamento parcela a parcela e o valor à
+vista. Esses números não são uma segunda conta — `previaProposta()` chama a
+mesma `propostaPublica()` que o documento emite, então não existe aritmética
+para divergir. A última parcela recebe o resto do arredondamento, e por isso a
+soma do plano bate com o total impresso, ao centavo.
+
+Daí saem os dois caminhos que o dono precisa:
+
+| Saída | Como funciona |
+|---|---|
+| **Link para o cliente** | `/proposta?id=…`, copiado com um botão. É o documento com o botão de aceite e, logo depois, o formulário do contrato. |
+| **PDF para o WhatsApp** | `/proposta?id=…&imprimir=1` abre a página e chama a impressão do navegador. A folha impressa perde barra de etapas, coluna de apoio e formulário de aceite, e ganha um bloco final com o endereço do documento — clicável dentro do PDF, escrito por extenso para quem recebeu uma foto dele. |
+
+Não há gerador de PDF, de propósito: a página **é** o documento, então não
+existem duas versões para divergir, e o navegador preserva `<a href>` como link
+vivo no arquivo exportado — que é exatamente o que faz o aceite funcionar num
+arquivo mandado por mensagem.
+
+Proposta já aceita não se edita: o contrato saiu dela, e mexer na origem depois
+do aceite é reescrever o que a outra parte assinou. A API devolve **409**. Para
+mudar escopo existe aditivo.
+
 ## Decisões de projeto
 
 Cada uma destas está no código de propósito, e a consequência é o motivo.
@@ -614,10 +661,12 @@ frontend/
   src/lib/Nav.svelte          barra de navegação com scroll-spy escrito direto no DOM e troca de idioma
   src/lib/Footer.svelte       rodapé com dados da empresa e selo de parceria (omitido quando vazio)
   src/lib/paginas/*.svelte    as páginas de verdade; recebem `lang` e leem conteudo/
+  src/lib/painel/Orcamentos.svelte  a aba do dono que escreve a proposta, com espelho do que o cliente vê
   src/lib/desenhos/projeto.js memorial do estudo de caso: geometria, fontes, SPL, T30, STI
   src/lib/desenhos/rotulos.js legendas das pranchas nos dois idiomas e formato de número
   src/lib/desenhos/*.svelte   AC-01 planta, AC-02 corte, AC-03 axonometria, AC-04 resultados,
                               mapa de cobertura e modelo navegável — SVG e canvas calculados
+  src/lib/desenhos/AntesDepois.svelte  a vista interna antes/depois, projetada do mesmo projeto.js
   src/app.html                shell: fontes, ícones da aba, manifest, `lang` da página
   src/hooks.server.js         carimba o `lang` do idioma da rota na pré-renderização
   src/routes/+layout.js       prerender = true — toda rota vira HTML no build
@@ -653,6 +702,7 @@ docs/img/                     capturas usadas neste README
 | `frontend/src/lib/desenhos/projeto.js` | o memorial que as quatro pranchas, o mapa e o modelo desenham: nenhuma cota é digitada duas vezes |
 | `frontend/src/lib/Nav.svelte` | scroll-spy escrito direto no DOM, fora do caminho reativo |
 | `frontend/src/routes/orcamento/` | triagem de 11 passos que não devolve preço ao cliente |
+| `frontend/src/lib/painel/Orcamentos.svelte` | o espelho do orçamento chama a mesma função que emite o documento — não há segunda conta para divergir |
 
 ## Endpoints
 

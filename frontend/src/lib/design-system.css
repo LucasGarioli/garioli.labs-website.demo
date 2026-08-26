@@ -147,6 +147,24 @@ figcaption {
   background: var(--color-surface);
   border: 1px solid var(--color-divider); border-radius: var(--radius-md);
 }
+/* Campo das paginas de fluxo (triagem, aceite, dados do contrato): o desenho
+   — borda, fundo, respiro — continua vindo do proprio bloco, mas o tamanho da
+   letra vem daqui. E' ele que decide se o iPhone da zoom, e regra inline
+   media query nenhuma alcanca. */
+.entrada { font-family: var(--font-body); font-size: 15px; }
+
+/* O Safari do iPhone da zoom na pagina inteira quando o campo que recebe o
+   foco tem menos de 16 px — e nao desfaz o zoom ao sair dele. O dedo tambem
+   precisa de mais alvo do que o ponteiro: 44 px e' a medida da Apple, e o
+   WCAG 2.2 pede 24 no minimo. Vale onde o ponteiro e' grosso; no mouse, nada
+   muda. */
+@media (pointer: coarse), (max-width: 620px) {
+  .input, .entrada { font-size: 16px; }
+  .input { min-height: 44px; }
+  .btn { min-height: 44px; }
+  .btn-icon { width: 44px; height: 44px; }
+}
+
 .input:hover { border-color: color-mix(in srgb, var(--color-text) 45%, transparent); }
 .input:focus-visible { border-color: var(--color-accent); outline-offset: 0; }
 textarea.input { min-height: 90px; resize: vertical; }

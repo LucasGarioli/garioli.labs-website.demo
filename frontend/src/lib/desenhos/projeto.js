@@ -45,7 +45,13 @@ export const palco = {
   largura: 32.0,
   nivel: 1.2,
   ledLargura: 18.0,
-  ledAltura: 5.0
+  ledAltura: 5.0,
+  /// Retornos de palco. Entram na conta do projeto porque quem toca precisa
+  /// ouvir a si mesmo sem que o palco vire uma segunda fonte para a plateia.
+  monitores: 6,
+  /// Telas laterais de imagem ampliada. O painel central de 18,00 m atende o
+  /// eixo; as poltronas do extremo do leque veem estas.
+  telaLateral: { largura: 6.0, altura: 3.4, dy: 13.5, z: 4.0 }
 };
 
 /// Plateia térrea: 32 arcos de raio 15,00 a 46,00 m, cinco blocos separados
@@ -82,6 +88,15 @@ export const mezanino = {
 
 /// Cabine de operação, no eixo, a 0,6 da maior distância — posição de mixagem.
 export const foh = { raio: 40.0, largura: 9.0, profundidade: 4.5 };
+
+/// Ilha de operação. A mesa de som fica no eixo, a 0,6 da maior distância; a
+/// cabine de transmissão e a sala de racks ficam ao lado dela, e não numa sala
+/// distante — quem opera imagem, som e luz precisa se ver e se ouvir. As duas
+/// são caixas envidraçadas sobre o piso da plateia, com pé-direito próprio.
+export const operacao = {
+  transmissao: { x0: 44.0, x1: 50.0, dy0: 7.0, dy1: 13.0, z0: 2.4, z1: 6.2, telas: 9 },
+  racks: { x0: 44.0, x1: 50.0, dy0: -13.0, dy1: -7.0, z0: 2.4, z1: 6.2, unidades: 8 }
+};
 
 const rad = (g) => (g * Math.PI) / 180;
 
@@ -185,6 +200,10 @@ export const fontes = {
     { rotulo: 'D2', raio: 46.0, altura: 12.0, atraso: 78, sens: 103, abertura: 55, aberturaV: 35 }
   ],
   subs: { rotulo: 'SUB', x: 18.6, altura: 0, caixas: 12 },
+  /// Subgraves voados em arranjo cardioide, acima do cluster central. O
+  /// arranjo de piso resolve a plateia térrea; este resolve o mezanino sem
+  /// jogar grave de volta no palco.
+  subsVoados: { rotulo: 'SUB·V', x: 19.5, altura: 16.6, caixas: 6, largura: 1.2 },
   /// Ângulos em que cada anel de delay é pendurado, no plano da planta.
   angulosDelay: [-0.8, -0.4, 0, 0.4, 0.8]
 };

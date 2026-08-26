@@ -72,7 +72,7 @@ export default {
   },
 
   hero: {
-    titulo: 'Sound you understand. Light that makes sense.',
+    titulo: 'Acoustics, sound and light, solved on paper — not on site.',
     sub:
       'Acoustics, sound, lighting and video design for churches, auditoriums and studios. ' +
       'Calculated before it is bought — so the money is spent once, on what fixes the room.',
@@ -399,6 +399,32 @@ export default {
       valeAte: (data) => `valid until ${data}`,
       restam: (dias) =>
         dias <= 0 ? 'expired' : dias === 1 ? 'last day' : `${dias} days left`,
+      objeto: 'Object',
+      diagnostico: 'Technical findings',
+      diagnosticoNota:
+        'What the site visit found. It is what every line of the scope below answers to.',
+      diretrizes: 'Design directives',
+      entregaveis: 'Deliverables by discipline',
+      prazo: 'Lead time',
+      prazoTexto: (d) => `${d} working days`,
+      incluso: 'Included',
+      naoIncluso: 'Not included',
+      criterio: 'Acceptance criterion',
+      planoTitulo: 'Payment plan',
+      aditivoSec: {
+        cortesia: 'Granted in full at no charge with this proposal',
+        valorDe: 'Reference value',
+        dimensao: 'Size',
+        condicoes: 'Conditions',
+        validade: (m) => `Valid for ${m} months from the signing of the contract.`
+      },
+      impressao: {
+        titulo: 'To accept this proposal',
+        texto:
+          'Open the address below on your phone or computer. It leads to this same ' +
+          'document online, with the accept button — and then to the contract.',
+        clique: 'Accept online'
+      },
       escopo: 'Scope',
       subtotal: 'Scope subtotal',
       desconto: (pct) => `${pct}% discount`,
@@ -488,6 +514,7 @@ export default {
       vistas: [
         { id: 'home', label: 'Today', kicker: 'Owner panel', titulo: 'What needs you right now' },
         { id: 'pipeline', label: 'Pipeline', kicker: 'Sales', titulo: 'From screening to delivery' },
+        { id: 'orcamentos', label: 'Quotes', kicker: 'Commercial document', titulo: 'Write it, send it, track it' },
         { id: 'financeiro', label: 'Finance', kicker: 'Receivables', titulo: 'Forecast, received and overdue' },
         { id: 'impostos', label: 'Taxes', kicker: 'Tax planning', titulo: 'What each regime costs' },
         { id: 'projetos', label: 'Projects', kicker: 'Execution', titulo: 'Work in progress' },
@@ -495,6 +522,85 @@ export default {
         { id: 'documentos', label: 'Templates', kicker: 'Library', titulo: 'Versioned proposals and contracts' },
         { id: 'auditoria', label: 'Audit', kicker: 'Log', titulo: 'Trail of acceptances and signatures' }
       ],
+      orcamentos: {
+        novo: 'New quote',
+        voltar: 'Back to the list',
+        vazio: 'No quotes yet. The first one starts from the house template, already filled in.',
+        colunas: { numero: 'Number', cliente: 'Client', situacao: 'Status', total: 'Total', validade: 'Validity' },
+        situacoes: {
+          rascunho: 'Draft',
+          enviada: 'Sent',
+          aceita: 'Accepted',
+          expirada: 'Expired'
+        },
+        acoes: {
+          editar: 'Edit',
+          abrir: 'See it as the client does',
+          copiar: 'Copy the client link',
+          copiado: 'Link copied',
+          enviar: 'Mark as sent',
+          pdf: 'Export PDF',
+          salvar: 'Save',
+          criar: 'Create quote',
+          salvo: 'Saved.'
+        },
+        travada: 'Already accepted — the contract came out of this document, so it can no longer be edited.',
+        expiraEm: (d) => (d > 0 ? `expires in ${d} day${d === 1 ? '' : 's'}` : 'expired'),
+        itens: (n) => `${n} scope ${n === 1 ? 'item' : 'items'}`,
+        secoes: {
+          cliente: 'Client',
+          documento: 'The document',
+          diagnostico: 'Technical findings',
+          escopo: 'Scope and investment',
+          condicoes: 'Commercial terms',
+          aditivo: 'Field services addendum',
+          avancado: 'Standard document text'
+        },
+        campos: {
+          instituicao: 'Institution or company',
+          cidade: 'City and state',
+          representante: 'Who answers for the client',
+          maps_url: 'Map link for the site',
+          titulo: 'Project title',
+          resumo: 'One-sentence summary',
+          disciplinas: 'Disciplines contracted',
+          objeto: 'Contract object',
+          diagnostico: 'One finding per line',
+          criterio: 'Acceptance criterion',
+          incluso: 'What is included',
+          naoIncluso: 'What is not included',
+          prazoDias: 'Lead time (working days)',
+          prazoCondicao: 'Lead time condition',
+          descontoPct: 'Discount (%)',
+          descontoMotivo: 'Reason for the discount',
+          entradaPct: 'Down payment (%)',
+          parcelas: 'Instalments after the down payment',
+          avistaPct: 'Pay-in-full discount (%)',
+          validadeDias: 'Validity (days)',
+          itemTitulo: 'Discipline',
+          itemDescricao: 'What it covers',
+          itemValor: 'Amount (R$)',
+          addItem: 'Add a discipline',
+          removerItem: 'Remove',
+          aditivoLigado: 'Include the field services addendum',
+          aditivoCortesia: 'Grant the addendum at no charge',
+          aditivoDimensao: 'Size of the addendum',
+          aditivoCondicoes: 'Addendum conditions',
+          aditivoValidade: 'Addendum validity (months)'
+        },
+        resumo: {
+          titulo: 'What the client will see',
+          subtotal: 'Subtotal',
+          desconto: 'Discount',
+          total: 'Total',
+          plano: 'Payment plan',
+          avista: 'Paid in full',
+          economia: 'saving of',
+          aditivo: 'Field services addendum',
+          cortesia: 'granted at no charge',
+          semItens: 'Add at least one discipline to see the numbers.'
+        }
+      },
       atalhos: {
         site: 'Public site',
         cliente: 'View as client',

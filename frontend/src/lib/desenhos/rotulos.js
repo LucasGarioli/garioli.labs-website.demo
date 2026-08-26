@@ -189,14 +189,20 @@ const PT = {
     dica: 'arraste ou use as setas',
     leitura: (p) => `${p} % do projeto executado visível`,
     figcaption:
-      'fig. 00 · o mesmo salão, antes e depois — arraste o divisor. À esquerda, o ' +
+      'fig. 00 · o mesmo salão, antes e depois — arraste o divisor. É a sala do ' +
+      'estudo de caso desta página, vista de onde fica a mesa de som. À esquerda, o ' +
       'que o levantamento encontra: alvenaria pintada e forro de PVC, superfícies ' +
       'que devolvem à sala quase todo o som que recebem, luz de trabalho chapada e ' +
       'duas caixas de mercado tentando cobrir a plateia inteira. À direita, o que o ' +
       'projeto entrega: forro absorvente em plano inclinado, ripado de difusão nas ' +
-      'laterais, arranjos L/R dimensionados para alcançar a última fileira com o ' +
-      'mesmo nível da primeira, e luz em camadas. A geometria e as poltronas são as ' +
-      'mesmas dos dois lados: o que muda é o projeto, não a sala.'
+      'laterais, arranjos L/R de dezesseis caixas dimensionados para alcançar a ' +
+      'última fileira com o mesmo nível da primeira, cluster central, subgraves ' +
+      'voados e de piso, preenchimento de primeira fila, retornos de palco, anel de ' +
+      'delay sobre a plateia — o segundo anel fica sobre a cabeça de quem olha —, ' +
+      'painel de LED com telas laterais, luz de cena em camadas e a ilha de ' +
+      'operação, com cabine de transmissão de um lado e sala de racks do outro. A ' +
+      'geometria e as poltronas são as mesmas dos dois lados: o que muda é o ' +
+      'projeto, não a sala.'
   },
 
   planta: {
@@ -608,14 +614,19 @@ const EN = {
     dica: 'drag or use the arrow keys',
     leitura: (p) => `${p} % of the built project visible`,
     figcaption:
-      'fig. 00 · the same hall, before and after — drag the divider. On the left, ' +
-      'what the survey finds: painted masonry and a PVC ceiling, surfaces that hand ' +
-      'the room back nearly all the sound they receive, flat work light and two ' +
-      'consumer cabinets trying to cover the whole audience. On the right, what the ' +
-      'project delivers: an absorbing raked ceiling, timber slat diffusion on the ' +
-      'side walls, L/R arrays sized to reach the last row at the level of the first, ' +
-      'and light in layers. The geometry and the seats are the same on both sides: ' +
-      'what changes is the design, not the room.'
+      'fig. 00 · the same hall, before and after — drag the divider. It is the room ' +
+      'this page studies, seen from where the mixing desk stands. On the left, what ' +
+      'the survey finds: painted masonry and a PVC ceiling, surfaces that hand the ' +
+      'room back nearly all the sound they receive, flat work light and two consumer ' +
+      'cabinets trying to cover the whole audience. On the right, what the project ' +
+      'delivers: an absorbing raked ceiling, timber slat diffusion on the side ' +
+      'walls, sixteen-box L/R arrays sized to reach the last row at the level of the ' +
+      'first, a centre cluster, flown and floor subwoofers, front fill, stage ' +
+      'monitors, a delay ring over the audience — the second ring hangs above your ' +
+      'own head —, an LED wall with side screens, stage light in layers, and the ' +
+      'operating island, with the broadcast booth on one side and the rack room on ' +
+      'the other. The geometry and the seats are the same on both sides: what ' +
+      'changes is the design, not the room.'
   },
 
   planta: {
