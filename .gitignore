@@ -1,0 +1,8 @@
+# ambiente
+.env
+.env.*
+!.env.example
+
+# sistema
+Thumbs.db
+.DS_Store
