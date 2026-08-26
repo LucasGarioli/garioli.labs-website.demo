@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  api:
+    name: API (Rust)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: backend
+
+      - name: Compila
+        run: cargo build --locked
+
+      # A regra de preço da triagem é a única lógica com dinheiro dentro.
+      # Se ela quebrar, o resto do repositório não importa.
+      - name: Testes
+        run: cargo test --locked
+
+      - name: Clippy
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+  web:
+    name: Front (SvelteKit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instala
+        run: npm ci
+
+      # Build sem VITE_API_BASE: é exatamente a build de portfólio que vai ao ar.
+      - name: Build
+        run: npm run build
+
+      - name: Confere a configuração de publicação
+        run: npx wrangler deploy --dry-run

@@ -1,0 +1,13 @@
+{
+  "name": "Garioli Labs",
+  "short_name": "Garioli Labs",
+  "description": "Engenharia acústica e audiovisual — plataforma de projetos, propostas e contratos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f4f4",
+  "theme_color": "#201e1d",
+  "icons": [
+    { "src": "/favicon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/favicon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
