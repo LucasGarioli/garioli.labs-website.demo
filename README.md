@@ -2,7 +2,7 @@
 
 <img src="frontend/static/favicon-192.png" alt="" width="72" height="72" />
 
-# Garioli Labs — plataforma
+# Plataforma Garioli Labs
 
 **Do primeiro contato ao contrato assinado, em um sistema só.**
 SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público ao painel administrativo.
