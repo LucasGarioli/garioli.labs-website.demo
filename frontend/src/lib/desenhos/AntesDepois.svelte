@@ -21,7 +21,7 @@
   /// obra não existe.
   import { rotulos } from '$lib/desenhos/rotulos.js';
   import {
-    sala, palco, foco, fontes, reforcos, foh, operacao,
+    sala, palco, foco, gabinetes, foh, operacao,
     fileirasPlateia, polar, teto, nivelOuvidoEm, alturaOuvido
   } from '$lib/desenhos/projeto.js';
 
@@ -190,115 +190,75 @@
   ];
 
   // ————————————————————— o sistema —————————————————————
-  /// Um arranjo não é uma caixa grande: são dezesseis caixas com curvatura
-  /// crescente de cima para baixo. É o desenho dessa curvatura — e não o
-  /// tamanho do desenho — que diz que a última fileira foi calculada.
-  function arranjo(fonte) {
-    const k = kd(fonte.x);
-    const larg = 1.35 * k;
-    const vao = 4.7;
-    const alt = (vao / fonte.caixas) * k;
-    const cx = sx(fonte.x, fonte.y);
-    const yTopo = sy(fonte.x, fonte.altura + vao);
-    const sentido = fonte.y < foco.y ? 1 : -1;
-    return Array.from({ length: fonte.caixas }, (_, i) => {
-      const t = i / (fonte.caixas - 1);
-      const y = yTopo + i * alt;
-      return {
-        x: n1(cx - larg / 2),
-        y: n1(y),
-        w: n1(larg),
-        h: n1(alt * 0.84),
-        giro: n1(sentido * t * t * 10),
-        gx: n1(cx),
-        gy: n1(y + alt / 2)
-      };
-    });
-  }
-  const arranjos = fontes.principais.map((f) => ({
-    caixas: arranjo(f),
-    haste: {
-      x: n1(sx(f.x, f.y)),
-      y1: n1(sy(f.x, teto(f.x))),
-      y2: n1(sy(f.x, f.altura + 4.9))
+  /// Todo o sistema sai de `gabinetes`, a mesma lista que a planta, o corte, a
+  /// axonometria e o modelo percorrem: as mesmas caixas, nas mesmas cotas, com
+  /// a mesma guinada e o mesmo tombo. Esta vista não tem uma segunda versão do
+  /// rig — era ela que fazia o subgrave voado aparecer deitado aqui e
+  /// empilhado nas pranchas.
+  ///
+  /// Cada gabinete é projetado canto a canto, e não desenhado como um
+  /// retângulo com uma rotação inventada por cima: a caixa tem eixo próprio
+  /// (guinada em torno da vertical, tombo em torno da lateral), e o que se vê
+  /// é a face que olha para a lente mais a face horizontal que ela alcança. É
+  /// daí que sai, de graça, a curvatura do arranjo, o leque do preenchimento
+  /// de primeira fila e o retorno deitado para trás no palco.
+  const corpo = (g) => {
+    const t = ((g.inclinacao ?? 0) * Math.PI) / 180;
+    const p = ((g.giro ?? 0) * Math.PI) / 180;
+    const u = [Math.cos(p) * Math.cos(t), Math.sin(p) * Math.cos(t), -Math.sin(t)];
+    const v = [-Math.sin(p), Math.cos(p)];
+    const w = [Math.cos(p) * Math.sin(t), Math.sin(p) * Math.sin(t), Math.cos(t)];
+    const a = g.prof / 2;
+    const b = g.larg / 2;
+    const c = g.alt / 2;
+    const pt = ([su, sv, sw]) =>
+      P(
+        g.x + su * a * u[0] + sv * b * v[0] + sw * c * w[0],
+        g.y + su * a * u[1] + sv * b * v[1] + sw * c * w[1],
+        g.z + su * a * u[2] + sw * c * w[2]
+      );
+    // Qual das duas faces opostas está voltada para a lente.
+    const dx = CAM.x - g.x;
+    const dy = foco.y - g.y;
+    const dz = CAM.z - g.z;
+    const fu = u[0] * dx + u[1] * dy + u[2] * dz > 0 ? 1 : -1;
+    const fw = w[0] * dx + w[1] * dy + w[2] * dz > 0 ? 1 : -1;
+    const quad = (cantos) => cantos.map(pt).join(' ');
+    return {
+      tipo: g.tipo,
+      // Quem está mais perto da lente é desenhado por último.
+      ordem: g.x,
+      frente: quad([[fu, -1, 1], [fu, 1, 1], [fu, 1, -1], [fu, -1, -1]]),
+      chanfro: quad([[1, -1, fw], [1, 1, fw], [-1, 1, fw], [-1, -1, fw]])
+    };
+  };
+
+  const equipamento = gabinetes
+    // O que está atrás da lente não entra no quadro — o segundo anel de delay
+    // fica sobre a cabeça de quem olha.
+    .filter((g) => g.x < CAM.x - 5)
+    .map(corpo)
+    .sort((a, b) => a.ordem - b.ordem);
+
+  /// Cabo de içamento: toda coluna pendurada nasce no forro. Sem ele a coluna
+  /// flutua, e a figura perde a única coisa que ela precisa dizer sobre
+  /// aquilo — que está pendurado, e não apoiado.
+  const hastes = (() => {
+    const topo = new Map();
+    for (const g of gabinetes) {
+      if (g.z < 6 || g.x > CAM.x - 5) continue;
+      const chave = `${g.grupo}|${g.y.toFixed(2)}`;
+      const t = topo.get(chave);
+      if (!t || g.z > t.z) topo.set(chave, g);
     }
-  }));
-
-  /// Cluster central e subgraves voados: um sobre o outro, no eixo.
-  const cluster = (() => {
-    const c = fontes.centro;
-    const k = kd(c.x);
-    const alt = (2.6 / c.caixas) * k;
-    return Array.from({ length: c.caixas }, (_, i) => ({
-      x: n1(sx(c.x, c.y) - (1.15 * k) / 2),
-      y: n1(sy(c.x, c.altura + 2.6) + i * alt),
-      w: n1(1.15 * k),
-      h: n1(alt * 0.84)
-    }));
+    return [...topo.values()]
+      .map((g) => ({
+        x: n1(sx(g.x, g.y)),
+        y1: n1(sy(g.x, teto(g.x))),
+        y2: n1(sy(g.x, g.z + g.alt / 2))
+      }))
+      .filter((h) => h.x > -140 && h.x < 1740);
   })();
-
-  const subsVoados = (() => {
-    const s = fontes.subsVoados;
-    const k = kd(s.x);
-    const passo = s.largura + 0.12;
-    return Array.from({ length: s.caixas }, (_, i) => {
-      const dy = (i - (s.caixas - 1) / 2) * passo;
-      return {
-        x: n1(sx(s.x, eixo(dy)) - (s.largura * k) / 2),
-        y: n1(sy(s.x, s.altura + 1.1)),
-        w: n1(s.largura * k),
-        h: n1(1.1 * k)
-      };
-    });
-  })();
-
-  /// Subgraves de piso: doze caixas em linha na frente do palco.
-  const subsPiso = (() => {
-    const s = fontes.subs;
-    const k = kd(s.x);
-    const passo = palco.largura / s.caixas;
-    return Array.from({ length: s.caixas }, (_, i) => {
-      const dy = -MP + (i + 0.5) * passo;
-      return {
-        x: n1(sx(s.x, eixo(dy)) - (passo * 0.72 * k) / 2),
-        y: n1(sy(s.x, 1.05)),
-        w: n1(passo * 0.72 * k),
-        h: n1(1.05 * k)
-      };
-    });
-  })();
-
-  /// Preenchimento de primeira fila, embutido na boca do palco.
-  const frontFill = (() => {
-    const ff = reforcos.frontFill;
-    const k = kd(ff.x);
-    return Array.from({ length: ff.caixas }, (_, i) => {
-      const dy = -13 + (i * 26) / (ff.caixas - 1);
-      return {
-        x: n1(sx(ff.x, eixo(dy)) - (0.32 * k) / 2),
-        y: n1(sy(ff.x, ff.z + 0.34)),
-        w: n1(0.32 * k),
-        h: n1(0.34 * k)
-      };
-    });
-  })();
-
-  /// Retornos de palco, virados para quem toca.
-  const monitores = Array.from({ length: palco.monitores }, (_, i) => {
-    const x = 13.5;
-    const k = kd(x);
-    const dy = (i - (palco.monitores - 1) / 2) * 4.4;
-    const meia = (0.62 * k) / 2;
-    const yTopo = sy(x, palco.nivel + 0.45);
-    const yBase = sy(x, palco.nivel);
-    const cx = sx(x, eixo(dy));
-    return [
-      `${n1(cx - meia)},${n1(yBase)}`,
-      `${n1(cx - meia * 0.55)},${n1(yTopo)}`,
-      `${n1(cx + meia * 0.55)},${n1(yTopo)}`,
-      `${n1(cx + meia)},${n1(yBase)}`
-    ].join(' ');
-  });
 
   /// A banda no palco. Sem gente, nenhuma sala tem escala — e é a escala que
   /// separa um desenho de uma fotografia. Cinco silhuetas de 1,75 m sobre um
@@ -343,25 +303,6 @@
     y: n1(sy(x, teto(x) - 1.3)),
     h: n1(0.9 * kd(x))
   }));
-
-  /// Primeiro anel de delay, pendurado sobre a plateia. O segundo fica sobre a
-  /// cabeça de quem olha — atrás da lente, e por isso fora do quadro.
-  const anelDelay = fontes.delays
-    .slice(0, 1)
-    .flatMap((d) =>
-      fontes.angulosDelay.map((a) => {
-        const p = polar(d.raio, a);
-        const k = kd(p.x);
-        return {
-          cx: n1(sx(p.x, p.y)),
-          cy: n1(sy(p.x, d.altura)),
-          w: n1(1.15 * k),
-          h: n1(0.4 * k),
-          teto: n1(sy(p.x, teto(p.x)))
-        };
-      })
-    )
-    .filter((o) => o.cx > -140 && o.cx < 1740);
 
   /// Treliças de cena com refletores móveis. O feixe só existe porque há
   /// fumaça no ar — sem ela, luz de palco não se vê, só se recebe.
@@ -497,73 +438,123 @@
     };
   })();
 
-  /// Cabine de transmissão e sala de racks, uma de cada lado da mesa. O que se
-  /// vê delas é o vidro interno correndo para fora do quadro — é assim que uma
-  /// caixa a seis metros da lente aparece numa foto de sala inteira.
+  /// Cabine de transmissão e sala de racks, uma de cada lado da mesa.
+  ///
+  /// São duas salas de verdade, e o que faz uma sala se ler como sala é ela
+  /// **fechar**: estrado embaixo, laje em cima, parede de fundo, montantes no
+  /// vidro. Antes daqui saíam só dois planos soltos, e o que se via era uma
+  /// mancha clara com luzinhas — a lente está 1,80 m acima do forro delas, e
+  /// de cima um plano sem tampa não tem leitura nenhuma.
   function cabine(c, lado) {
-    const dyInterno = lado < 0 ? c.dy1 : c.dy0;
+    // A face envidraçada é a que olha para o eixo da sala, onde fica a mesa.
+    const dyI = lado < 0 ? c.dy1 : c.dy0;
+    const dyE = lado < 0 ? c.dy0 : c.dy1;
+    const q = (cantos) => cantos.map(([x, dy, z]) => P(x, eixo(dy), z)).join(' ');
+    const montantes = [1, 2, 3].map((i) => {
+      const x = c.x0 + ((c.x1 - c.x0) * i) / 4;
+      return `M${P(x, eixo(dyI), c.z0)} L${P(x, eixo(dyI), c.z1)}`;
+    });
     return {
-      vidro: [
-        P(c.x0, eixo(dyInterno), c.z1),
-        P(c.x1, eixo(dyInterno), c.z1),
-        P(c.x1, eixo(dyInterno), c.z0),
-        P(c.x0, eixo(dyInterno), c.z0)
-      ].join(' '),
-      fundo: [
-        P(c.x0, eixo(c.dy0), c.z1),
-        P(c.x0, eixo(c.dy1), c.z1),
-        P(c.x0, eixo(c.dy1), c.z0),
-        P(c.x0, eixo(c.dy0), c.z0)
-      ].join(' '),
-      /// Testeira: a faixa cega acima do vidro, que é o que dá volume à caixa.
-      testeira: [
-        P(c.x0, eixo(dyInterno), c.z1 + 0.5),
-        P(c.x1, eixo(dyInterno), c.z1 + 0.5),
-        P(c.x1, eixo(dyInterno), c.z1),
-        P(c.x0, eixo(dyInterno), c.z1)
-      ].join(' ')
+      /// O estrado acompanha a rampa da plateia: mais alto atrás, mais baixo
+      /// na frente. É essa aresta inclinada que assenta a caixa no piso.
+      estrado: q([
+        [c.x0, dyI, c.z0], [c.x1, dyI, c.z0],
+        [c.x1, dyI, piso(c.x1)], [c.x0, dyI, piso(c.x0)]
+      ]),
+      fundo: q([[c.x0, dyI, c.z1], [c.x0, dyE, c.z1], [c.x0, dyE, c.z0], [c.x0, dyI, c.z0]]),
+      vidro: q([[c.x0, dyI, c.z1], [c.x1, dyI, c.z1], [c.x1, dyI, c.z0], [c.x0, dyI, c.z0]]),
+      parapeito: q([
+        [c.x0, dyI, c.z0 + 0.95], [c.x1, dyI, c.z0 + 0.95],
+        [c.x1, dyI, c.z0], [c.x0, dyI, c.z0]
+      ]),
+      /// A parede de trás, do lado da lente, e a laje de cobertura: são elas
+      /// que dão volume à caixa em vez de plano.
+      traseira: q([[c.x1, dyI, c.z1], [c.x1, dyE, c.z1], [c.x1, dyE, c.z0], [c.x1, dyI, c.z0]]),
+      laje: q([
+        [c.x0, dyI, c.z1], [c.x1, dyI, c.z1],
+        [c.x1, dyE, c.z1], [c.x0, dyE, c.z1]
+      ]),
+      montantes
     };
   }
 
   const salaRacks = cabine(operacao.racks, -1);
   const salaTv = cabine(operacao.transmissao, 1);
 
-  /// Racks no estilo de sala de servidores: armários pretos em fila, cada um
-  /// com sua régua de sinalização. O passo abre em perspectiva porque os do
-  /// fundo estão mais longe.
+  /// Racks no estilo de sala de servidores: armários pretos em fila **contra a
+  /// parede externa**, e não colados no vidro — encostados no vidro eles
+  /// tapavam a sala inteira, que é o que fazia a figura virar um paredão de
+  /// luzinhas azuis. Recuados, aparecem atrás de um metro e meio de piso
+  /// vazio, que é o que dá a profundidade.
   const racks = Array.from({ length: operacao.racks.unidades }, (_, i) => {
     const c = operacao.racks;
-    const x = c.x0 + ((i + 0.5) * (c.x1 - c.x0)) / c.unidades;
+    const x = c.x0 + 0.5 + ((i + 0.5) * (c.x1 - c.x0 - 1)) / c.unidades;
     const k = kd(x);
-    const dy = c.dy1 - 0.55;
+    // Encostados no fundo da sala eles somem no escuro; encostados no vidro
+    // tapam a sala. A fila fica no meio, que é onde ela cabe e onde se vê.
+    const dy = c.dy0 + 2.6;
+    const larg = 0.75;
     return {
-      x: n1(sx(x, eixo(dy)) - (0.8 * k) / 2),
+      x: n1(sx(x, eixo(dy)) - (larg * k) / 2),
       y: n1(sy(x, c.z0 + 2.1)),
-      w: n1(0.8 * k),
+      w: n1(larg * k),
       h: n1(2.1 * k),
-      lx: n1(sx(x, eixo(dy)) - (0.8 * k) / 2 + 0.8 * k * 0.16),
-      lw: n1(0.8 * k * 0.68),
-      leds: Array.from({ length: 7 }, (_, j) => n1(sy(x, c.z0 + 0.28 + j * 0.26)))
+      lx: n1(sx(x, eixo(dy)) - (larg * k) / 2 + larg * k * 0.18),
+      lw: n1(larg * k * 0.64),
+      leds: Array.from({ length: 6 }, (_, j) => n1(sy(x, c.z0 + 0.35 + j * 0.3)))
     };
   });
 
-  /// Parede de monitores da transmissão: três por três.
+  /// Parede de monitores da transmissão: três por três, na parede de fundo da
+  /// cabine — de onde quem opera realmente olha para eles.
   const monitoresTv = (() => {
     const c = operacao.transmissao;
-    const x = c.x0 + 0.9;
+    const x = c.x0 + 0.25;
     const k = kd(x);
-    const dy = c.dy0 + 0.5;
+    const dy = c.dy0 + 2.6;
     return Array.from({ length: 9 }, (_, i) => {
-      const col = i % 3;
+      const col = (i % 3) - 1;
       const lin = Math.floor(i / 3);
       return {
-        x: n1(sx(x, eixo(dy + col * 1.15 - 1.15)) - (1.02 * k) / 2),
-        y: n1(sy(x, c.z0 + 3.4 - lin * 0.68)),
-        w: n1(1.02 * k),
-        h: n1(0.6 * k)
+        x: n1(sx(x, eixo(dy + col * 1.2)) - (1.05 * k) / 2),
+        y: n1(sy(x, c.z0 + 2.9 - lin * 0.72)),
+        w: n1(1.05 * k),
+        h: n1(0.62 * k)
       };
     });
   })();
+
+  /// Gente trabalhando dentro das duas salas. Uma sala vazia envidraçada é uma
+  /// vitrine; com dois vultos sentados à bancada, ela é o lugar de onde a
+  /// transmissão sai. E é a silhueta, de novo, que dá a escala.
+  const equipe = [
+    { c: operacao.racks, lado: -1, recuo: 1.9, x: 43.4 },
+    { c: operacao.transmissao, lado: 1, recuo: 1.9, x: 43.0 },
+    { c: operacao.transmissao, lado: 1, recuo: 3.4, x: 43.7 }
+  ].map(({ c, lado, recuo, x }) => {
+    const k = kd(x);
+    // `recuo` conta a partir do vidro para dentro da sala.
+    const ydy = (lado < 0 ? c.dy1 : c.dy0) + lado * recuo;
+    const z = c.z0 + 0.42;
+    return {
+      bancada: [
+        P(x - 0.7, eixo(ydy - 1.4), z + 0.75),
+        P(x - 0.7, eixo(ydy + 1.4), z + 0.75),
+        P(x - 0.7, eixo(ydy + 1.4), z + 0.68),
+        P(x - 0.7, eixo(ydy - 1.4), z + 0.68)
+      ].join(' '),
+      corpo: [
+        P(x, eixo(ydy - 0.42), z),
+        P(x, eixo(ydy - 0.26), z + 0.82),
+        P(x, eixo(ydy + 0.26), z + 0.82),
+        P(x, eixo(ydy + 0.42), z)
+      ].join(' '),
+      cx: n1(sx(x, eixo(ydy))),
+      cy: n1(sy(x, z + 1.0)),
+      rx: n1(0.15 * k),
+      ry: n1(0.18 * k)
+    };
+  });
 
   // ————————————————————— o que existe hoje —————————————————————
   /// Duas caixas de mercado sobre tripé e uma tela de 5,00 × 3,00 m: é com
@@ -928,40 +919,6 @@
                 </g>
               {/each}
 
-              <!-- Arranjos L/R, cluster central e subgraves voados. -->
-              {#each arranjos as a}
-                <path d="M{a.haste.x} {a.haste.y1} V{a.haste.y2}" stroke="#3a4046" stroke-width="2" fill="none" />
-                <g fill="#191d21" stroke="#4b545b" stroke-width="1">
-                  {#each a.caixas as c}
-                    <rect
-                      x={c.x} y={c.y} width={c.w} height={c.h}
-                      transform="rotate({c.giro} {c.gx} {c.gy})"
-                    />
-                  {/each}
-                </g>
-              {/each}
-              <g fill="#14171a" stroke="#2f363c" stroke-width="1">
-                {#each cluster as c}
-                  <rect x={c.x} y={c.y} width={c.w} height={c.h} />
-                {/each}
-                {#each subsVoados as s}
-                  <rect x={s.x} y={s.y} width={s.w} height={s.h} />
-                {/each}
-              </g>
-
-              <!-- Anel de delay sobre a plateia. -->
-              {#each anelDelay as d}
-                <path d="M{d.cx} {d.teto} V{d.cy - d.h}" stroke="#3a4046" stroke-width="1.6" fill="none" />
-                <rect
-                  x={d.cx - d.w / 2} y={d.cy - d.h} width={d.w} height={d.h}
-                  fill="#14171a" stroke="#2f363c" stroke-width="1"
-                />
-                <rect
-                  x={d.cx - d.w / 2} y={d.cy} width={d.w} height={d.h * 0.8}
-                  fill="#14171a" stroke="#2f363c" stroke-width="1"
-                />
-              {/each}
-
               <!-- Palco: piso de madeira, degrau iluminado e retornos. -->
               <polygon points={deck} fill="#20180f" />
               <polygon points={deckFrente} fill="#0f0d0c" />
@@ -978,21 +935,17 @@
                   <ellipse cx={g.cx} cy={g.cy} rx={g.rx} ry={g.ry} />
                 {/each}
               </g>
-              <g fill="#1a1e22">
-                {#each monitores as m}
-                  <polygon points={m} />
+              <!-- O sistema inteiro, do mais distante ao mais próximo da
+                   lente: arranjos, cluster, subgraves voados e de piso,
+                   preenchimentos, anéis de delay e retornos de palco, todos
+                   vindos da mesma lista de gabinetes das pranchas. -->
+              <g stroke="#3f484f" stroke-width="1">
+                {#each hastes as h}
+                  <path d="M{h.x} {h.y1} V{h.y2}" stroke="#39414b" stroke-width="1.6" fill="none" />
                 {/each}
-              </g>
-
-              <!-- Preenchimento de primeira fila e subgraves de piso. -->
-              <g fill="#101315">
-                {#each frontFill as f}
-                  <rect x={f.x} y={f.y} width={f.w} height={f.h} />
-                {/each}
-              </g>
-              <g fill="#131619" stroke="#262c31" stroke-width="1">
-                {#each subsPiso as s}
-                  <rect x={s.x} y={s.y} width={s.w} height={s.h} />
+                {#each equipamento as e}
+                  <polygon points={e.chanfro} fill="#0c0f12" />
+                  <polygon points={e.frente} fill="#1b2126" />
                 {/each}
               </g>
 
@@ -1002,31 +955,50 @@
 
               {@render poltronas(false)}
 
-              <!-- Sala de racks e cabine de transmissão, ladeando a mesa. -->
-              <polygon points={salaRacks.fundo} fill="#0b0e10" />
-              <polygon points={salaTv.fundo} fill="#0b0e10" />
-              <polygon points={salaRacks.vidro} fill="url(#ad-vidro)" />
-              <polygon points={salaTv.vidro} fill="url(#ad-vidro)" />
+              <!-- Sala de racks e cabine de transmissão, ladeando a mesa.
+                   Cada uma é montada de dentro para fora: estrado, parede de
+                   fundo, o que há dentro, o vidro, e só então a parede de trás
+                   e a laje, que são o que fecha a caixa para quem olha. -->
+              <polygon points={salaRacks.estrado} fill="#090b0d" />
+              <polygon points={salaTv.estrado} fill="#090b0d" />
+              <polygon points={salaRacks.fundo} fill="#0d1114" />
+              <polygon points={salaTv.fundo} fill="#0d1114" />
               <g clip-path="url(#ad-racks)">
                 {#each racks as rk}
-                  <rect x={rk.x} y={rk.y} width={rk.w} height={rk.h} fill="#0e1113" stroke="#242a2f" stroke-width="1" />
+                  <rect x={rk.x} y={rk.y} width={rk.w} height={rk.h} fill="#101418" stroke="#2b333a" stroke-width="1" />
                   {#each rk.leds as ly}
-                    <rect x={rk.lx} y={ly} width={rk.lw} height="2.5" fill="#3fb0d8" opacity="0.75" />
+                    <rect x={rk.lx} y={ly} width={rk.lw} height="2" fill="#3fb0d8" opacity="0.7" />
                   {/each}
                 {/each}
               </g>
               <g clip-path="url(#ad-tv)">
                 {#each monitoresTv as m}
-                  <rect x={m.x} y={m.y} width={m.w} height={m.h} fill="#1d5f80" opacity="0.85" />
+                  <rect x={m.x} y={m.y} width={m.w} height={m.h} fill="#1d5f80" opacity="0.5" />
                   <rect x={m.x} y={m.y} width={m.w} height={m.h} fill="none" stroke="#0a0f13" stroke-width="1.5" />
                 {/each}
               </g>
-              <g fill="none" stroke="#3d454b" stroke-width="2">
+              {#each equipe as p}
+                <polygon points={p.bancada} fill="#121619" />
+                <polygon points={p.corpo} fill="#07090a" />
+                <ellipse cx={p.cx} cy={p.cy} rx={p.rx} ry={p.ry} fill="#07090a" />
+              {/each}
+              <polygon points={salaRacks.vidro} fill="url(#ad-vidro)" opacity="0.55" />
+              <polygon points={salaTv.vidro} fill="url(#ad-vidro)" opacity="0.55" />
+              <polygon points={salaRacks.parapeito} fill="#0c0f12" />
+              <polygon points={salaTv.parapeito} fill="#0c0f12" />
+              <g fill="none" stroke="#39424a" stroke-width="1.5">
+                {#each [...salaRacks.montantes, ...salaTv.montantes] as m}
+                  <path d={m} />
+                {/each}
+              </g>
+              <g fill="none" stroke="#4c565e" stroke-width="2">
                 <polygon points={salaRacks.vidro} />
                 <polygon points={salaTv.vidro} />
               </g>
-              <polygon points={salaRacks.testeira} fill="#0a0c0e" />
-              <polygon points={salaTv.testeira} fill="#0a0c0e" />
+              <polygon points={salaRacks.traseira} fill="#0a0d0f" stroke="#2b3238" stroke-width="1.5" />
+              <polygon points={salaTv.traseira} fill="#0a0d0f" stroke="#2b3238" stroke-width="1.5" />
+              <polygon points={salaRacks.laje} fill="#15191d" stroke="#2b3238" stroke-width="1.5" />
+              <polygon points={salaTv.laje} fill="#15191d" stroke="#2b3238" stroke-width="1.5" />
 
               <!-- A ilha de operação, no mesmo ponto da mesa dobrável de hoje. -->
               <polygon points={mesa.frente} fill="#0b0d0f" />

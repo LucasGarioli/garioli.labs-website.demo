@@ -1,6 +1,6 @@
 <script>
   import {
-    sala, foco, palco, mezanino, fontes, caixas, fileirasMezanino,
+    sala, foco, palco, mezanino, fontes, gabinetes, fileirasMezanino,
     assentos, niveisPorAssento, lugares, polar, teto, corDeNivel, faixaNivel
   } from './projeto.js';
   import { formatador, rotulos } from './rotulos.js';
@@ -103,38 +103,19 @@
     return [...m.values()];
   })();
 
-  /// Cada caixa do sistema como um paralelepípedo. As dezesseis caixas de um
-  /// arranjo aparecem uma a uma: é essa coluna que faz a sala funcionar, e ela
-  /// não é um ponto.
-  const equipamento = (() => {
-    const cx = [];
-    const cubo = (x, y, z, dx, dy, dz, grupo) => cx.push({ x, y, z, dx, dy, dz, grupo });
-    for (const f of fontes.principais) {
-      for (let i = 0; i < f.caixas; i++) {
-        cubo(f.x, f.y, f.altura + 0.2 + i * 0.34, 0.95, 1.25, 0.3, 'arranjo');
-      }
-    }
-    for (let i = 0; i < fontes.centro.caixas; i++) {
-      cubo(fontes.centro.x, fontes.centro.y, fontes.centro.altura + 0.2 + i * 0.32,
-           0.8, 0.95, 0.28, 'arranjo');
-    }
-    for (const d of fontes.delays) {
-      for (const a of fontes.angulosDelay) {
-        const q = polar(d.raio, a);
-        cubo(q.x, q.y, d.altura, 0.85, 1.0, 0.85, 'delay');
-      }
-    }
-    for (const c of caixas) {
-      if (c.grupo === 'FF') cubo(c.x, c.y, c.z, 0.5, 0.5, 0.4, 'fill');
-      if (c.grupo === 'OF') cubo(c.x, c.y, c.z, 0.7, 0.8, 1.3, 'fill');
-    }
-    const passo = palco.largura / fontes.subs.caixas;
-    for (let i = 0; i < fontes.subs.caixas; i++) {
-      cubo(fontes.subs.x, foco.y - palco.largura / 2 + (i + 0.5) * passo, 0.5,
-           1.0, passo * 0.74, 1.0, 'sub');
-    }
-    return cx;
-  })();
+  /// Cada gabinete do sistema como um paralelepípedo, no lugar e no tamanho em
+  /// que está pendurado. As dezesseis caixas de um arranjo aparecem uma a uma:
+  /// é essa coluna que faz a sala funcionar, e ela não é um ponto. A lista é a
+  /// mesma que a planta, o corte e a axonometria desenham.
+  const equipamento = gabinetes.map((g) => ({
+    x: g.x,
+    y: g.y,
+    z: g.z,
+    dx: g.prof,
+    dy: g.larg,
+    dz: g.alt,
+    grupo: g.tipo
+  }));
 
   // As seis faces de um cubo, pelos índices dos cantos (bit 1 = x, 2 = y, 4 = z).
   const FACES = [
@@ -498,10 +479,10 @@
       </div>
     </div>
 
-    <p class="ajuda">{r.modelo.ajuda} · {r.modelo.rodape(fmt.milhar(lugares.total), caixas.length)}</p>
+    <p class="ajuda">{r.modelo.ajuda} · {r.modelo.rodape(fmt.milhar(lugares.total), gabinetes.length)}</p>
   </div>
 
-  <figcaption>{r.modelo.figcaption(fmt.milhar(lugares.total), caixas.length)}</figcaption>
+  <figcaption>{r.modelo.figcaption(fmt.milhar(lugares.total), gabinetes.length)}</figcaption>
 </figure>
 
 <style>

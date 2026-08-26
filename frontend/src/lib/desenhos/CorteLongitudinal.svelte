@@ -4,6 +4,7 @@
   // mezanino e a altura sob o peitoril. Ambas saem calculadas de projeto.js.
   import {
     obra, sala, foco, palco, plateia, mezanino, fontes, caixas, materiais,
+    gabinetes, gabinetesDe, conjunto,
     fileirasPlateia, fileirasMezanino, lugares, maiorDistancia, teto
   } from './projeto.js';
   import { formatador, material, rotulos } from './rotulos.js';
@@ -92,11 +93,31 @@
   ]);
 
   const arranjo = fontes.principais[0];
-  const alturaArranjo = 5.3; // 16 caixas de 0,33 m
-  const centro = fontes.centro;
-  const alturaCentro = 2.6;
 
-  const delays = fontes.delays.map((d) => ({ ...d, x: foco.x + d.raio }));
+  /// Cada gabinete desenhado no plano do corte: profundidade × altura, girado
+  /// pelo tombo com que ele foi pendurado. Vem de `gabinetes` — o corte não
+  /// tem uma segunda versão do sistema, e é por isso que o número de caixas
+  /// aqui é o mesmo da planta e o mesmo da simulação.
+  const noCorte = (g) => ({
+    x: sx(g.x - g.prof / 2),
+    y: sz(g.z + g.alt / 2),
+    w: L(g.prof),
+    h: L(g.alt),
+    giro: `rotate(${(-g.inclinacao).toFixed(1)} ${sx(g.x).toFixed(1)} ${sz(g.z).toFixed(1)})`
+  });
+
+  /// O que o corte no eixo atravessa de fato, e o arranjo L/R projetado — ele
+  /// está a treze metros do plano de corte, e por isso entra em fantasma.
+  const noEixo = gabinetes.filter((g) =>
+    ['C', 'SUB·V', 'SUB', 'FF', 'MON', 'D1', 'D2'].includes(g.grupo)
+  );
+  const projetados = gabinetesDe('L');
+
+  const delays = fontes.delays.map((d) => ({
+    ...d,
+    x: foco.x + d.raio,
+    voo: conjunto(d.rotulo).voo
+  }));
 
   const cotasX = $derived([
     { de: 0, ate: palco.x1, t: fmt.dec(18) },
@@ -249,31 +270,64 @@
 
     <!-- ————— sistema de som ————— -->
     <g class="som">
-      <rect x={sx(arranjo.x) - 7} y={sz(arranjo.altura + alturaArranjo)} width="14"
-            height={L(alturaArranjo)} class="arranjo-fantasma" />
-      <line x1={sx(arranjo.x)} y1={sz(arranjo.altura + alturaArranjo)} x2={sx(arranjo.x)}
+      <!-- Arranjo L/R, projetado: está fora do plano do corte. -->
+      <line x1={sx(arranjo.x)} y1={sz(conjunto('L').z.max)} x2={sx(arranjo.x)}
             y2={sz(teto(arranjo.x))} class="rigging" />
-      <rect x={sx(centro.x) - 4.5} y={sz(centro.altura + alturaCentro)} width="9"
-            height={L(alturaCentro)} class="arranjo" />
-      <text x={sx(21)} y={sz(16.4)} class="rot-fonte">
-        {r.corte.arranjo(fmt.dec(arranjo.altura))}
+      {#each projetados as g}
+        {@const c = noCorte(g)}
+        <rect x={c.x} y={c.y} width={c.w} height={c.h} transform={c.giro}
+              class="arranjo-fantasma" />
+      {/each}
+
+      <!-- Rigging das colunas que o corte atravessa. -->
+      {#each ['C', 'SUB·V'] as grupo}
+        <line x1={sx(conjunto(grupo).x.meio)} y1={sz(conjunto(grupo).z.max)}
+              x2={sx(conjunto(grupo).x.meio)} y2={sz(teto(conjunto(grupo).x.meio))}
+              class="rigging" />
+      {/each}
+      {#each delays as d}
+        <line x1={sx(d.x)} y1={sz(d.altura + 0.4)} x2={sx(d.x)} y2={sz(teto(d.x))} class="rigging" />
+      {/each}
+
+      {#each noEixo as g}
+        {@const c = noCorte(g)}
+        <rect
+          x={c.x} y={c.y} width={c.w} height={c.h} transform={c.giro}
+          class={g.tipo === 'sub' ? 'subs' : 'arranjo'}
+        />
+      {/each}
+
+      <text x={sx(21.6)} y={sz(17.6)} class="rot-fonte">
+        {r.comum.conjunto('L/R', conjunto('L').caixas, fmt.dec(conjunto('L').voo))}
       </text>
-      <text x={sx(21)} y={sz(11.4)} class="rot-fonte">
-        {r.corte.centro(centro.caixas, fmt.dec(centro.altura))}
+      <text x={sx(22.4)} y={sz(15.4)} class="rot-fonte">
+        {r.comum.conjunto('SUB·V', conjunto('SUB·V').caixas, fmt.dec(conjunto('SUB·V').voo))}
+      </text>
+      <text x={sx(21.6)} y={sz(12.2)} class="rot-fonte">
+        {r.comum.conjunto('C', conjunto('C').caixas, fmt.dec(conjunto('C').voo))}
       </text>
 
+      <!-- O rótulo fica sob o anel, menos quando o anel está alto: ali,
+           logo abaixo dele, passa a linha de maior distância de escuta, e as
+           duas anotações se escreviam uma por cima da outra. Esse vai para o
+           lado, na cota do próprio anel. -->
       {#each delays as d}
-        <rect x={sx(d.x) - 4} y={sz(d.altura + 1.1)} width="8" height={L(1.1)} class="arranjo" />
-        <line x1={sx(d.x)} y1={sz(d.altura + 1.1)} x2={sx(d.x)} y2={sz(teto(d.x))} class="rigging" />
-        <text x={sx(d.x)} y={sz(d.altura) + 18} class="rot-fonte" text-anchor="middle">
-          {r.corte.delay(d.rotulo, fmt.dec(d.altura), d.atraso)}
+        {@const alto = d.altura > 13}
+        <text
+          x={sx(d.x) - (alto ? 16 : 0)} y={sz(d.altura) + (alto ? 4 : 20)}
+          class="rot-fonte" text-anchor={alto ? 'end' : 'middle'}
+        >
+          {r.comum.delay(d.rotulo, d.caixas, fmt.dec(d.voo), d.atraso)}
         </text>
       {/each}
 
-      <rect x={sx(fontes.subs.x) - 6} y={sz(1.65)} width="12" height={L(1.65)} class="subs" />
-      <rect x={sx(18.4) - 4} y={sz(2.3)} width="8" height={L(0.5)} class="arranjo" />
-      <text x={sx(19.8)} y={sz(4.6)} class="rot-fonte">{r.corte.ff(fmt.dec(1.9))}</text>
+      <text x={sx(19.8)} y={sz(4.6)} class="rot-fonte">
+        {r.comum.conjunto('FF', conjunto('FF').caixas, fmt.dec(conjunto('FF').voo))}
+      </text>
       <text x={sx(19.8)} y={sz(3.2)} class="rot-fonte">{r.comum.sub(fontes.subs.caixas)}</text>
+      <text x={sx(9.4)} y={sz(3.0)} class="rot-fonte" text-anchor="middle">
+        {r.comum.conjunto('MON', conjunto('MON').caixas, fmt.dec(palco.nivel))}
+      </text>
     </g>
 
     <!-- ————— maior distância de escuta ————— -->

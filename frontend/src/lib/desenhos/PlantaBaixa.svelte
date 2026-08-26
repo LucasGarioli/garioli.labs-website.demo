@@ -1,6 +1,7 @@
 <script>
   import {
     obra, sala, foco, palco, plateia, mezanino, foh, fontes,
+    gabinetes, conjuntos, conjunto, caixas,
     fileirasPlateia, fileirasMezanino, lugares, polar, maiorDistancia
   } from './projeto.js';
   import { formatador, rotulos } from './rotulos.js';
@@ -81,16 +82,18 @@
             L ${ptS(re, a)} A ${L(re).toFixed(1)} ${L(re).toFixed(1)} 0 0 1 ${ptS(re, -a)} Z`;
   })();
 
-  /// Cobertura horizontal de um arranjo: cunha simetrica em torno da mira,
-  /// apontada para o meio da metade de plateia que aquele arranjo cobre. O
-  /// alcance termina na ultima fileira — e um cone de cobertura, nao um raio
-  /// infinito — e o recorte da sala prende o que sobrar dentro das paredes.
-  function leque(fonte, aberturaGraus) {
-    const meia = (aberturaGraus * Math.PI) / 360;
-    const lado = fonte.y < foco.y ? -1 : 1;
-    const alvo = polar(ultimoMez.raio, lado * ultimoMez.abertura * 0.55);
-    const dy = alvo.y - fonte.y;
-    const dx = alvo.x - fonte.x;
+  /// Cobertura horizontal de um arranjo: cunha simétrica em torno da mira
+  /// **de verdade** — a mesma que a simulação usa, lida da caixa mais alta do
+  /// conjunto. Enquanto o cone era desenhado por uma regra própria, a planta
+  /// mostrava uma cobertura e o mapa calculava outra.
+  function leque(grupo) {
+    const alto = caixas.filter((c) => c.grupo === grupo).at(-1);
+    // A abertura desenhada é a abertura da caixa. Um valor fixo aqui era mais
+    // uma versão do sistema para a planta discordar do mapa.
+    const meia = (alto.abertura * Math.PI) / 360;
+    const fonte = { x: alto.x, y: alto.y };
+    const dy = alto.mira.y - fonte.y;
+    const dx = alto.mira.x - fonte.x;
     const mira = Math.atan2(dy, dx);
     const alcance = Math.hypot(dx, dy) * 1.04;
     const canto = (d) => {
@@ -99,6 +102,26 @@
     };
     return `M ${sx(fonte.y).toFixed(1)} ${sy(fonte.x).toFixed(1)} L ${canto(-meia)} L ${canto(meia)} Z`;
   }
+
+  /// As caixas saem de `gabinetes`. Em planta uma coluna pendurada é um
+  /// retângulo só — todas as suas caixas estão na mesma prumada —, e uma linha
+  /// de subgraves aparece caixa a caixa. Contagem, cota e posição vêm do mesmo
+  /// lugar que o corte, a axonometria e a simulação leem.
+  const COLUNAS = ['L', 'R', 'C', 'OF·L', 'OF·R', 'SUB·V'];
+  const colunas = conjuntos.filter((c) => COLUNAS.includes(c.grupo));
+  const enfileiradas = gabinetes.filter((g) => ['SUB', 'FF', 'MON'].includes(g.grupo));
+  const cones = ['L', 'R', 'OF·L', 'OF·R'].map(leque);
+
+  /// Onde o rótulo de cada conjunto cabe sem cair em cima de outro.
+  const rotuloDe = (c) => {
+    const centrado = Math.abs(c.y.meio - foco.y) < 1;
+    const fora = c.y.meio < foco.y ? -1 : 1;
+    return {
+      x: sx(c.y.meio) + (centrado ? 0 : fora * 14),
+      y: sy(c.x.meio) + (c.grupo === 'C' ? -26 : c.grupo === 'SUB·V' ? 30 : -22),
+      ancora: centrado ? 'middle' : fora < 0 ? 'end' : 'start'
+    };
+  };
 
   const eixosX = [
     { r: 'A', m: 0 },
@@ -129,8 +152,11 @@
     { de: foco.x + ultimoMez.raio, ate: sala.profundidade, t: fmt.dec(4) }
   ]);
 
+  /// F01 fica encostada na boca de cena, onde já passam a barra de subgraves e
+  /// a prumada do subgrave voado: o rótulo desce um pouco para sair de baixo
+  /// delas.
   const rotulosFileira = [
-    { f: fileirasPlateia[0], t: 'F01', lado: 1 },
+    { f: fileirasPlateia[0], t: 'F01', lado: 1, dy: 24 },
     { f: fileirasPlateia[15], t: 'F16' },
     { f: fileirasPlateia[31], t: 'F32' },
     { f: fileirasMezanino[0], t: 'M01' },
@@ -255,33 +281,55 @@
     <!-- ————— sistema de som ————— -->
     <g class="fontes">
       <g clip-path="url(#pl-sala)">
-        {#each fontes.principais as s}
-          <path d={leque(s, 90)} class="cone" />
+        {#each cones as c}
+          <path d={c} class="cone" />
         {/each}
       </g>
-      {#each fontes.principais as s}
-        <rect x={sx(s.y) - 5} y={sy(s.x) - 15} width="10" height="30" class="array" />
-        <text x={sx(s.y) + (s.y < foco.y ? -12 : 12)} y={sy(s.x) - 20}
-              class="rot-fonte" text-anchor={s.y < foco.y ? 'end' : 'start'}>
-          {s.rotulo} · {s.caixas} {lang === 'en' ? 'cab.' : 'cx'} · ▲ +{fmt.dec(s.altura, 2)}
+
+      <!-- Colunas penduradas: um retângulo por conjunto, na prumada. -->
+      {#each colunas as c}
+        <rect
+          x={sx(c.y.min)} y={sy(c.x.min)} width={L(c.y.tam)} height={L(c.x.tam)}
+          class="array"
+          class:array-centro={c.grupo === 'C'}
+          class:subs={c.tipo === 'sub'}
+        />
+        <!-- O texto do rótulo é o mesmo do corte, escrito no mesmo lugar:
+             duas versões da mesma frase divergem no dia em que uma delas
+             muda. -->
+        <text x={rotuloDe(c).x} y={rotuloDe(c).y} class="rot-fonte" text-anchor={rotuloDe(c).ancora}>
+          {r.comum.conjunto(c.grupo, c.caixas, fmt.dec(c.voo))}
         </text>
       {/each}
-      <rect x={sx(fontes.centro.y) - 4} y={sy(fontes.centro.x) - 11} width="8" height="22"
-            class="array array-centro" />
-      <text x={sx(fontes.centro.y)} y={sy(fontes.centro.x) - 21} class="rot-fonte"
-            text-anchor="middle">C · {fontes.centro.caixas} {lang === 'en' ? 'cab.' : 'cx'}</text>
-      <rect x={sx(foco.y - 6)} y={sy(fontes.subs.x) - 4} width={L(12)} height="8" class="subs" />
-      <text x={sx(foco.y)} y={sy(fontes.subs.x) + 19} class="rot-fonte"
-            text-anchor="middle">{r.comum.sub(fontes.subs.caixas)}</text>
+
+      <!-- Subgraves de piso, preenchimento e retornos: caixa a caixa. -->
+      {#each enfileiradas as g}
+        <rect
+          x={sx(g.y - g.larg / 2)} y={sy(g.x - g.prof / 2)}
+          width={L(g.larg)} height={L(g.prof)}
+          class={g.grupo === 'SUB' ? 'subs' : 'fill'}
+        />
+      {/each}
+      <!-- A barra de subgraves é simétrica, e no eixo da sala ela cruza a
+           prumada do subgrave voado: o rótulo sai pela ponta esquerda da
+           barra, onde não há nada desenhado. -->
+      <text x={sx(Math.min(...gabinetes.filter((g) => g.grupo === 'SUB').map((g) => g.y))) - 20}
+            y={sy(fontes.subs.x) + 4} class="rot-fonte" text-anchor="end">
+        {r.comum.sub(fontes.subs.caixas)}
+      </text>
 
       {#each fontes.delays as d}
-        <path d={arco(d.raio, -0.62, 0.62)} class="anel-delay" />
-        {#each [-0.44, 0, 0.44] as a}
+        <path d={arco(d.raio, -0.9, 0.9)} class="anel-delay" />
+        {#each fontes.angulosDelay as a}
           <circle cx={sx(polar(d.raio, a).y)} cy={sy(polar(d.raio, a).x)} r="5"
                   class="ponto-delay" />
         {/each}
-        <text x={sx(polar(d.raio, 0.72).y) + 10} y={sy(polar(d.raio, 0.72).x)} class="rot-fonte">
-          {d.rotulo} · ▲ +{fmt.dec(d.altura, 2)} · {d.atraso} ms
+        <!-- O rótulo cresce para dentro da sala. Crescendo para fora, o do
+             segundo anel — que é o de maior raio — saía da folha e caía em
+             cima da cota lateral. -->
+        <text x={sx(polar(d.raio, 0.98).y) - 10} y={sy(polar(d.raio, 0.98).x)}
+              class="rot-fonte" text-anchor="end">
+          {r.comum.delay(d.rotulo, conjunto(d.rotulo).caixas, fmt.dec(conjunto(d.rotulo).voo), d.atraso)}
         </text>
       {/each}
     </g>
@@ -308,7 +356,7 @@
     <!-- ————— rótulos de fileira ————— -->
     {#each rotulosFileira as r}
       <text x={sx(polar(r.f.raio, (r.lado ?? -1) * r.f.abertura).y) + (r.lado === 1 ? 16 : -16)}
-            y={sy(polar(r.f.raio, (r.lado ?? -1) * r.f.abertura).x) + 4} class="rot-fila"
+            y={sy(polar(r.f.raio, (r.lado ?? -1) * r.f.abertura).x) + 4 + (r.dy ?? 0)} class="rot-fila"
             text-anchor={r.lado === 1 ? 'start' : 'end'}>
         {r.t}
       </text>
@@ -515,6 +563,7 @@
   .array { fill: var(--color-accent-600); stroke: var(--color-neutral-100); stroke-width: 0.8; }
   .array-centro { fill: var(--color-accent-700); }
   .subs { fill: var(--color-accent-800); stroke: var(--color-accent-600); stroke-width: 0.8; }
+  .fill { fill: var(--color-accent-500); stroke: var(--color-neutral-100); stroke-width: 0.5; }
   .anel-delay { fill: none; stroke: var(--color-accent-700); stroke-width: 1;
                 stroke-dasharray: 9 6; }
   .ponto-delay { fill: var(--color-accent-500); stroke: var(--color-text); stroke-width: 1; }

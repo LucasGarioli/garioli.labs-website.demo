@@ -4,7 +4,7 @@
   // é ilustrativo — cada célula chama `splEm` com a mesma física que a página
   // usa para afirmar os números do estudo de caso.
   import {
-    obra, sala, foco, palco, plateia, fontes, caixas, foh,
+    obra, sala, foco, palco, plateia, fontes, caixas, gabinetes, conjuntos, conjunto, foh,
     fileirasPlateia, fileirasMezanino, lugares, cobertura, polar,
     nivelOuvidoEm, splEm, assentos, sti, corDeNivel, faixaNivel
   } from './projeto.js';
@@ -93,11 +93,11 @@
     return { ...p, z, nivel: splEm({ x: p.x, y: p.y, z }), fileira: alvo.indice };
   })();
 
-  const grupos = (() => {
-    const m = new Map();
-    for (const c of caixas) m.set(c.grupo, (m.get(c.grupo) ?? 0) + 1);
-    return [...m].map(([g, n]) => ({ g, n }));
-  })();
+  /// A árvore do modelo conta **gabinetes**, como as pranchas: o arranjo tem
+  /// dezesseis caixas, e é isso que ele tem em qualquer lugar onde apareça. O
+  /// que a análise divide em cinquenta pontos de emissão é assunto do rodapé,
+  /// onde está escrito "fontes".
+  const grupos = conjuntos.map((c) => ({ g: c.grupo, n: c.caixas }));
 
   /// O nome do arquivo aberto na janela sai do nome da obra, no idioma da folha.
   const arquivo = $derived(r.obra.nome.toLowerCase().replace(/[^a-zç]+/g, '-') + '.rsn');
@@ -109,9 +109,22 @@
     { nivel: 2, t: r.mapa.arvore.materiais(fmt.dec(sala.alfaMedio, 3)), tipo: '' },
     { nivel: 1, t: r.mapa.arvore.plateia(fmt.milhar(lugares.plateia)), tipo: '' },
     { nivel: 1, t: r.mapa.arvore.mezanino(fmt.milhar(lugares.mezanino)), tipo: '' },
-    { nivel: 1, t: r.mapa.arvore.fontes(caixas.length), tipo: 'ativo' },
-    ...grupos.map((g) => ({ nivel: 2, t: `${g.g} · ${g.n}`, tipo: 'fonte' }))
+    { nivel: 1, t: r.mapa.arvore.fontes(gabinetes.length), tipo: 'ativo' }
   ]);
+
+  /// Onze grupos não descem em uma coluna só sem invadir os parâmetros: a
+  /// lista de fontes abre em duas colunas, como qualquer árvore de projeto
+  /// faz quando o ramo cresce.
+  const paresFontes = $derived(
+    grupos
+      .map((g) => `${g.g} · ${g.n}`)
+      .reduce((linhas, t, i) => {
+        const meio = Math.ceil(grupos.length / 2);
+        if (i < meio) linhas.push([t, '']);
+        else linhas[i - meio][1] = t;
+        return linhas;
+      }, [])
+  );
 
   const parametros = $derived(r.mapa.parametros(celulas.length, fmt.milhar(assentos.length)));
 
@@ -147,13 +160,16 @@
   /// Rótulos das fontes, todos fora do leque de poltronas para não competir
   /// com a leitura do mapa.
   const rotulosFonte = $derived([
-    { t: r.mapa.fonte('L', 16), y: foco.y - 15.5, x: 15.6, ancora: 'end' },
-    { t: r.mapa.fonte('R', 16), y: foco.y + 15.5, x: 15.6, ancora: 'start' },
-    { t: r.mapa.fonte('C', 8), y: foco.y, x: 15.6, ancora: 'middle' },
-    { t: r.mapa.fonte('FF', grupos.find((g) => g.g === 'FF')?.n ?? 0), y: foco.y, x: 21.0, ancora: 'middle' },
-    { t: r.mapa.fonte('OF', 2), y: foco.y - 20.5, x: 21.4, ancora: 'end' },
-    { t: r.mapa.fonte('D1', 5), y: 80, x: 22, ancora: 'start' },
-    { t: r.mapa.fonte('D2', 5), y: foco.y + 34, x: foco.x + fontes.delays[1].raio + 2.4, ancora: 'start' }
+    { t: r.mapa.fonte('L', conjunto('L').caixas), y: foco.y - 15.5, x: 15.6, ancora: 'end' },
+    { t: r.mapa.fonte('R', conjunto('R').caixas), y: foco.y + 15.5, x: 15.6, ancora: 'start' },
+    { t: r.mapa.fonte('C', conjunto('C').caixas), y: foco.y, x: 15.6, ancora: 'middle' },
+    { t: r.mapa.fonte('FF', conjunto('FF').caixas), y: foco.y, x: 21.0, ancora: 'middle' },
+    { t: r.mapa.fonte('OF', conjunto('OF·L').caixas), y: foco.y - 20.5, x: 21.4, ancora: 'end' },
+    { t: r.mapa.fonte('D1', conjunto('D1').caixas), y: 80, x: 22, ancora: 'start' },
+    {
+      t: r.mapa.fonte('D2', conjunto('D2').caixas),
+      y: foco.y + 34, x: foco.x + fontes.delays[1].raio + 2.4, ancora: 'start'
+    }
   ]);
 </script>
 
@@ -185,7 +201,13 @@
     <text x="72" y="76" class="titulo-painel">{r.mapa.modelo}</text>
     {#each arvore as n, i}
       <text x={72 + n.nivel * 14} y={104 + i * 21} class="no" class:no-raiz={n.tipo === 'raiz'}
-            class:no-ativo={n.tipo === 'ativo'} class:no-fonte={n.tipo === 'fonte'}>{n.t}</text>
+            class:no-ativo={n.tipo === 'ativo'}>{n.t}</text>
+    {/each}
+    {#each paresFontes as par, i}
+      <text x="100" y={104 + (arvore.length + i) * 21} class="no no-fonte">{par[0]}</text>
+      {#if par[1]}
+        <text x="196" y={104 + (arvore.length + i) * 21} class="no no-fonte">{par[1]}</text>
+      {/if}
     {/each}
 
     <line x1="72" y1="374" x2="284" y2="374" class="divisor-fino" />

@@ -92,10 +92,14 @@ export const foh = { raio: 40.0, largura: 9.0, profundidade: 4.5 };
 /// Ilha de operação. A mesa de som fica no eixo, a 0,6 da maior distância; a
 /// cabine de transmissão e a sala de racks ficam ao lado dela, e não numa sala
 /// distante — quem opera imagem, som e luz precisa se ver e se ouvir. As duas
-/// são caixas envidraçadas sobre o piso da plateia, com pé-direito próprio.
+/// são caixas envidraçadas sobre um estrado, com pé-direito próprio.
+///
+/// O estrado nasce a 3,00 m porque o piso da plateia sobe: a 41,50 m ele está
+/// a 2,03 m e a 47,00 m já está a 2,64 m. Uma cota fixa abaixo disso deixaria
+/// a cabine enterrada no fundo e flutuando na frente.
 export const operacao = {
-  transmissao: { x0: 44.0, x1: 50.0, dy0: 7.0, dy1: 13.0, z0: 2.4, z1: 6.2, telas: 9 },
-  racks: { x0: 44.0, x1: 50.0, dy0: -13.0, dy1: -7.0, z0: 2.4, z1: 6.2, unidades: 8 }
+  transmissao: { x0: 41.5, x1: 47.0, dy0: 7.5, dy1: 13.5, z0: 3.0, z1: 6.2, telas: 9 },
+  racks: { x0: 41.5, x1: 47.0, dy0: -13.5, dy1: -7.5, z0: 3.0, z1: 6.2, unidades: 8 }
 };
 
 const rad = (g) => (g * Math.PI) / 180;
@@ -175,35 +179,56 @@ export function polar(raio, ang) {
   return { x: foco.x + raio * Math.cos(ang), y: foco.y + raio * Math.sin(ang) };
 }
 
-/// Sistema principal, delays e subgraves.
+/// Sistema principal, delays e subgraves — a **intenção de projeto**: onde
+/// cada conjunto está pendurado e com quantas caixas. A geometria caixa a
+/// caixa sai daqui em `gabinetes`, e a acústica sai de `gabinetes`. Os três
+/// níveis existem para que nenhum desenho invente a sua própria versão do
+/// sistema: planta, corte, axonometria, modelo e a vista interna da home
+/// percorrem a mesma lista.
 ///
-/// `sens` é o nível a 1,00 m do arranjo inteiro em serviço, `mira` é o alvo
-/// geométrico da caixa e `abertura` é o ângulo em que a resposta cai 6 dB —
-/// os três números que a simulação de cobertura consome.
+/// `sens` é o nível a 1,00 m em serviço, `abertura` é o ângulo em que a
+/// resposta cai 6 dB, e `mira` é o alvo geométrico — os números que a
+/// simulação de cobertura consome.
 export const fontes = {
+  /// `abertura` é a cobertura **horizontal** do elemento, e 90° é o que um
+  /// guia de onda de arranjo entrega de verdade. Com 50°, como estava, o mapa
+  /// mostrava um sulco entre o alcance do cluster e o dos arranjos: buraco de
+  /// planilha, não de sala.
   principais: [
-    {
-      rotulo: 'L', x: 19.5, y: foco.y - 13.0, altura: 14.0, caixas: 16,
-      sens: 118, mira: { x: 52, y: foco.y - 20, z: 3.0 }, abertura: 50, aberturaV: 22
-    },
-    {
-      rotulo: 'R', x: 19.5, y: foco.y + 13.0, altura: 14.0, caixas: 16,
-      sens: 118, mira: { x: 52, y: foco.y + 20, z: 3.0 }, abertura: 50, aberturaV: 22
-    }
+    { rotulo: 'L', x: 19.5, y: foco.y - 13.0, altura: 14.0, caixas: 16, abertura: 90 },
+    { rotulo: 'R', x: 19.5, y: foco.y + 13.0, altura: 14.0, caixas: 16, abertura: 90 }
   ],
+  /// Arranjo central. Também é um arranjo, e não uma caixa: os arranjos L/R
+  /// miram cada um o seu lado do leque, então quem cobre a faixa do eixo — do
+  /// centro da primeira fileira ao centro da última do mezanino — é este.
   centro: {
-    rotulo: 'C', x: 19.5, y: foco.y, altura: 13.0, caixas: 8,
-    sens: 106, mira: { x: 32, y: foco.y, z: 1.2 }, abertura: 45, aberturaV: 30
+    rotulo: 'C', x: 19.5, y: foco.y, altura: 13.0, caixas: 8, abertura: 90,
+    caixasPorSecao: 2,
+    secoes: [
+      { alvo: 24, sens: 104.0, aberturaV: 22 },
+      { alvo: 32, sens: 108.5, aberturaV: 16 },
+      { alvo: 44, sens: 109.0, aberturaV: 12 },
+      { alvo: 60, sens: 111.5, aberturaV: 10 }
+    ]
   },
   delays: [
-    { rotulo: 'D1', raio: 32.0, altura: 10.5, atraso: 36, sens: 103, abertura: 55, aberturaV: 35 },
-    { rotulo: 'D2', raio: 46.0, altura: 12.0, atraso: 78, sens: 103, abertura: 55, aberturaV: 35 }
+    { rotulo: 'D1', raio: 32.0, altura: 10.5, atraso: 36, sens: 107.0, abertura: 55, aberturaV: 35, caixas: 5 },
+    /// O segundo anel pende sobre o mezanino, cujo piso sobe até 11,40 m: a
+    /// 12,00 m ele ficava **abaixo** da orelha da última fileira, mirando para
+    /// baixo e para trás de quem deveria ouvi-lo. Sobe para 15,00 m, com
+    /// 0,85 m de folga sob o forro de 15,85 m naquela profundidade.
+    { rotulo: 'D2', raio: 46.0, altura: 15.0, atraso: 78, sens: 106.0, abertura: 55, aberturaV: 35, caixas: 5 }
   ],
   subs: { rotulo: 'SUB', x: 18.6, altura: 0, caixas: 12 },
-  /// Subgraves voados em arranjo cardioide, acima do cluster central. O
-  /// arranjo de piso resolve a plateia térrea; este resolve o mezanino sem
-  /// jogar grave de volta no palco.
-  subsVoados: { rotulo: 'SUB·V', x: 19.5, altura: 16.6, caixas: 6, largura: 1.2 },
+  /// Subgraves voados, **empilhados**: uma coluna vertical no eixo, atrás do
+  /// cluster central, e não uma fileira horizontal. É assim que se pendura
+  /// grave — a coluna é o que produz o padrão cardioide no plano vertical, com
+  /// as duas caixas do meio invertidas para cancelar o que iria para o palco.
+  /// Espalhá-los lado a lado daria interferência entre eles e nenhum controle
+  /// de direção.
+  subsVoados: {
+    rotulo: 'SUB·V', x: 20.6, base: 15.0, caixas: 6, invertidas: [2, 3], cardioide: true
+  },
   /// Ângulos em que cada anel de delay é pendurado, no plano da planta.
   angulosDelay: [-0.8, -0.4, 0, 0.4, 0.8]
 };
@@ -221,95 +246,354 @@ export function nivelOuvidoEm(x) {
 /// seções com mira própria — a de baixo cobre as primeiras fileiras, a de cima
 /// alcança o mezanino. É essa divisão, e não potência, que sustenta pouca
 /// variação de nível ao longo de quarenta e seis metros.
+/// Os ganhos não são escolhidos no olho: saem de um ajuste que percorre as
+/// 5 065 poltronas e procura o conjunto que fecha a menor dispersão, com a
+/// restrição de que a seção que atende mais longe nunca seja acionada mais
+/// baixo que a que atende mais perto — shading monotônico, que é o que se
+/// pendura de verdade.
 const secoesArranjo = [
-  { dz: 0.4, alvo: 26, sens: 105.5, aberturaV: 16 },
-  { dz: 1.7, alvo: 33, sens: 110.0, aberturaV: 14 },
-  { dz: 3.0, alvo: 45, sens: 112.0, aberturaV: 12 },
-  { dz: 4.3, alvo: 63, sens: 114.5, aberturaV: 10 }
+  // Os alvos são profundidades da plateia, que começa em x = 23,00 m: mirar
+  // antes disso é apontar a caixa para o vão entre a boca de cena e a primeira
+  // fileira, onde não há ninguém.
+  { alvo: 24, sens: 97.0, aberturaV: 20 },
+  { alvo: 27, sens: 101.5, aberturaV: 18 },
+  { alvo: 31, sens: 107.0, aberturaV: 16 },
+  { alvo: 36, sens: 108.0, aberturaV: 14 },
+  { alvo: 42, sens: 108.0, aberturaV: 12 },
+  { alvo: 49, sens: 108.0, aberturaV: 11 },
+  { alvo: 57, sens: 108.0, aberturaV: 10 },
+  { alvo: 64, sens: 114.0, aberturaV: 9 }
 ];
 
 /// Reforços que toda sala deste porte tem e que quase nunca aparecem no
 /// desenho: preenchimento de primeira fila e cobertura das poltronas extremas.
 export const reforcos = {
-  frontFill: { x: 18.4, z: 1.9, caixas: 12, sens: 96, abertura: 90, aberturaV: 45 },
-  outFill: { x: 18.0, dy: 17.0, z: 9.0, sens: 109, abertura: 55, aberturaV: 45, alvoRaio: 30, alvoGraus: 52 }
+  frontFill: { x: 18.4, z: 1.9, caixas: 12, sens: 96.5, abertura: 90, aberturaV: 45 },
+  /// As poltronas do extremo do leque não são vistas por nenhum arranjo
+  /// principal. Quem as cobre é um pequeno arranjo por lado — três caixas
+  /// empilhadas, com mira própria em cada uma —, e não uma caixa só: uma caixa
+  /// única atendendo trinta metros de fatia é a definição de campo desigual,
+  /// escaldante embaixo dela e insuficiente no fim.
+  outFill: {
+    x: 18.0, dy: 17.0, base: 10.4, abertura: 55, caixasPorSecao: 2,
+    secoes: [
+      { alvoRaio: 18, alvoGraus: 58, sens: 103.5, aberturaV: 22 },
+      { alvoRaio: 26, alvoGraus: 57, sens: 105.5, aberturaV: 17 },
+      { alvoRaio: 35, alvoGraus: 57, sens: 105.5, aberturaV: 13 },
+      { alvoRaio: 46, alvoGraus: 57, sens: 109.0, aberturaV: 10 }
+    ]
+  }
 };
 
-/// Cada caixa como um ponto no espaço, que é o que a simulação percorre.
-export const caixas = [
+// ————————————————————— o rack de gabinetes —————————————————————
+
+/// Tamanho real de cada tipo de gabinete, em metros. Uma caixa desenhada sem
+/// tamanho é um retângulo qualquer, e foi por isso que o mesmo arranjo já
+/// apareceu curto na planta e comprido no corte.
+export const gabinete = {
+  arranjo: { larg: 1.15, prof: 0.55, alt: 0.32 },
+  cluster: { larg: 0.9, prof: 0.5, alt: 0.3 },
+  sub: { larg: 1.2, prof: 0.85, alt: 0.6 },
+  fill: { larg: 0.34, prof: 0.3, alt: 0.3 },
+  delay: { larg: 0.6, prof: 0.5, alt: 0.62 },
+  monitor: { larg: 0.62, prof: 0.45, alt: 0.42 }
+};
+
+const grau = 180 / Math.PI;
+
+/// Inclinação de uma caixa: o ângulo, em graus abaixo da horizontal, entre o
+/// centro do gabinete e o alvo que ele atende. Não é decoração — é o que faz o
+/// arranjo parecer um arranjo em todos os desenhos, e sai da mesma mira que a
+/// simulação usa.
+const tombo = (x, z, alvoX, alvoZ) => Number((Math.atan2(z - alvoZ, alvoX - x) * grau).toFixed(1));
+
+/// Todos os gabinetes da sala, cada um com centro, tamanho e o grupo a que
+/// pertence. **Esta é a lista que todo desenho percorre.**
+export const gabinetes = [
+  // Arranjos principais: as caixas sobem a partir de `altura`, e cada quarto
+  // do arranjo atende uma seção — a de cima, a mais distante.
   ...fontes.principais.flatMap((f) =>
-    secoesArranjo.map((sec, i) => ({
-      rotulo: `${f.rotulo}${i + 1}`,
-      grupo: f.rotulo,
-      x: f.x,
-      y: f.y,
-      z: f.altura + sec.dz,
-      sens: sec.sens,
-      abertura: f.abertura,
-      aberturaV: sec.aberturaV,
-      mira: {
-        x: sec.alvo,
-        y: foco.y + (f.y - foco.y) * 0.6,
-        z: nivelOuvidoEm(sec.alvo)
-      }
-    }))
+    Array.from({ length: f.caixas }, (_, i) => {
+      const g = gabinete.arranjo;
+      const sec = secoesArranjo[Math.floor(i / (f.caixas / secoesArranjo.length))];
+      const z = f.altura + (i + 0.5) * g.alt;
+      return {
+        grupo: f.rotulo,
+        tipo: 'arranjo',
+        rotulo: `${f.rotulo}${i + 1}`,
+        x: f.x,
+        y: f.y,
+        z,
+        ...g,
+        inclinacao: tombo(f.x, z, sec.alvo, nivelOuvidoEm(sec.alvo))
+      };
+    })
   ),
-  { ...fontes.centro, grupo: 'C', z: fontes.centro.altura },
+  // Cluster central: coluna única sobre o eixo, mirando as primeiras fileiras.
+  ...Array.from({ length: fontes.centro.caixas }, (_, i) => {
+    const c = fontes.centro;
+    const g = gabinete.cluster;
+    const sec = c.secoes[Math.floor(i / c.caixasPorSecao)];
+    const z = c.altura + (i + 0.5) * g.alt;
+    return {
+      grupo: 'C',
+      tipo: 'cluster',
+      rotulo: `C${i + 1}`,
+      x: c.x,
+      y: c.y,
+      z,
+      ...g,
+      inclinacao: tombo(c.x, z, sec.alvo, nivelOuvidoEm(sec.alvo))
+    };
+  }),
+  // Subgraves de piso, em linha à frente do palco.
+  ...Array.from({ length: fontes.subs.caixas }, (_, i) => {
+    const g = gabinete.sub;
+    const passo = palco.largura / fontes.subs.caixas;
+    return {
+      grupo: 'SUB',
+      tipo: 'sub',
+      rotulo: `SUB${i + 1}`,
+      x: fontes.subs.x,
+      y: foco.y - palco.largura / 2 + (i + 0.5) * passo,
+      z: g.alt / 2,
+      ...g,
+      inclinacao: 0
+    };
+  }),
+  // Subgraves voados: coluna empilhada, duas caixas invertidas no meio.
+  ...Array.from({ length: fontes.subsVoados.caixas }, (_, i) => {
+    const s = fontes.subsVoados;
+    const g = gabinete.sub;
+    return {
+      grupo: 'SUB·V',
+      tipo: 'sub',
+      rotulo: `SV${i + 1}`,
+      x: s.x,
+      y: foco.y,
+      z: s.base + (i + 0.5) * g.alt,
+      ...g,
+      invertida: s.invertidas.includes(i),
+      // A caixa invertida é a caixa virada de costas: é isso, e não um ajuste
+      // de processador, que faz o cardioide.
+      giro: s.invertidas.includes(i) ? 180 : 0,
+      inclinacao: 0
+    };
+  }),
+  // Preenchimento de primeira fila, embutido na boca do palco.
+  ...Array.from({ length: reforcos.frontFill.caixas }, (_, i) => {
+    const ff = reforcos.frontFill;
+    const g = gabinete.fill;
+    const aMax = Math.atan(palco.largura / 2 / (ff.x - foco.x));
+    const ang = -aMax + (i / (ff.caixas - 1)) * 2 * aMax;
+    return {
+      grupo: 'FF',
+      tipo: 'fill',
+      rotulo: `FF${i + 1}`,
+      x: ff.x,
+      y: foco.y + (ff.x - foco.x) * Math.tan(ang),
+      z: ff.z,
+      ...g,
+      giro: Number((ang * grau).toFixed(1)),
+      inclinacao: 12
+    };
+  }),
+  // Preenchimento das poltronas extremas: uma coluna de três por lado.
+  ...[-1, 1].flatMap((lado) => {
+    const of = reforcos.outFill;
+    const g = gabinete.arranjo;
+    const grupo = lado < 0 ? 'OF·L' : 'OF·R';
+    const n = of.secoes.length * of.caixasPorSecao;
+    return Array.from({ length: n }, (_, i) => {
+      const sec = of.secoes[Math.floor(i / of.caixasPorSecao)];
+      const z = of.base + (i + 0.5) * g.alt;
+      const alvo = polar(sec.alvoRaio, (lado * sec.alvoGraus) / grau);
+      return {
+        grupo,
+        tipo: 'arranjo',
+        rotulo: `${grupo}${i + 1}`,
+        x: of.x,
+        y: foco.y + lado * of.dy,
+        z,
+        ...g,
+        giro: Number((lado * 38).toFixed(1)),
+        inclinacao: tombo(of.x, z, alvo.x, nivelOuvidoEm(alvo.x))
+      };
+    });
+  }),
+  // Anéis de delay.
+  ...fontes.delays.flatMap((d) =>
+    fontes.angulosDelay.map((a, i) => {
+      const g = gabinete.delay;
+      const p = polar(d.raio, a);
+      const q = polar(d.raio + 11, a);
+      return {
+        grupo: d.rotulo,
+        tipo: 'delay',
+        rotulo: `${d.rotulo}.${i + 1}`,
+        x: p.x,
+        y: p.y,
+        z: d.altura,
+        ...g,
+        giro: Number((a * grau).toFixed(1)),
+        inclinacao: tombo(p.x, d.altura, q.x, nivelOuvidoEm(q.x))
+      };
+    })
+  ),
+  // Retornos de palco, virados para quem toca.
+  ...Array.from({ length: palco.monitores }, (_, i) => {
+    const g = gabinete.monitor;
+    return {
+      grupo: 'MON',
+      tipo: 'monitor',
+      rotulo: `M${i + 1}`,
+      x: 13.5,
+      y: foco.y + (i - (palco.monitores - 1) / 2) * 4.4,
+      z: palco.nivel + g.alt / 2,
+      ...g,
+      inclinacao: -35
+    };
+  })
+];
+
+/// Um gabinete pelo rótulo — para o desenho que precisa cotar uma caixa
+/// específica sem recalcular onde ela está.
+export const gabinetesDe = (grupo) => gabinetes.filter((g) => g.grupo === grupo);
+
+/// Os conjuntos como a planta e o corte os carimbam: um retângulo por grupo,
+/// com a contagem, a cota de voo e a extensão que ele ocupa. Sai dos mesmos
+/// gabinetes — a planta não pode dizer dezesseis caixas enquanto o corte
+/// desenha doze.
+export const conjuntos = [...new Set(gabinetes.map((g) => g.grupo))].map((grupo) => {
+  const gs = gabinetesDe(grupo);
+  const alcance = (f, tam) => {
+    const min = Math.min(...gs.map((g) => g[f] - g[tam] / 2));
+    const max = Math.max(...gs.map((g) => g[f] + g[tam] / 2));
+    return { min, max, meio: (min + max) / 2, tam: max - min };
+  };
+  return {
+    grupo,
+    tipo: gs[0].tipo,
+    caixas: gs.length,
+    x: alcance('x', 'prof'),
+    y: alcance('y', 'larg'),
+    z: alcance('z', 'alt'),
+    /// A cota que a prancha carimba é a base do conjunto, que é o que o
+    /// rigger mede: a altura do gancho até a caixa de baixo.
+    voo: Number(Math.min(...gs.map((g) => g.z - g.alt / 2)).toFixed(2))
+  };
+});
+
+/// O conjunto de um grupo, pelo nome.
+export const conjunto = (grupo) => conjuntos.find((c) => c.grupo === grupo);
+
+// ————————————————————— as fontes da simulação —————————————————————
+
+/// Centro acústico de um conjunto de gabinetes: é dele que a simulação parte,
+/// e ele é a média dos gabinetes desenhados. Enquanto os dois eram digitados
+/// separadamente, a caixa do desenho e a fonte do cálculo podiam estar a
+/// metros uma da outra sem que nada acusasse.
+function centroAcustico(gs) {
+  const n = gs.length;
+  return {
+    x: gs.reduce((a, g) => a + g.x, 0) / n,
+    y: gs.reduce((a, g) => a + g.y, 0) / n,
+    z: gs.reduce((a, g) => a + g.z, 0) / n
+  };
+}
+
+/// Cada fonte da simulação, com posição herdada dos gabinetes. Subgraves e
+/// retornos não entram: o mapa é a 4 kHz, e nessa banda nem o sub emite nem o
+/// retorno aponta para a plateia.
+export const caixas = [
+  ...fontes.principais.flatMap((f) => {
+    const coluna = gabinetesDe(f.rotulo);
+    const porSecao = coluna.length / secoesArranjo.length;
+    return secoesArranjo.map((sec, i) => {
+      const c = centroAcustico(coluna.slice(i * porSecao, (i + 1) * porSecao));
+      return {
+        rotulo: `${f.rotulo}${i + 1}`,
+        grupo: f.rotulo,
+        ...c,
+        sens: sec.sens,
+        abertura: f.abertura,
+        aberturaV: sec.aberturaV,
+        // Cada arranjo cobre o seu lado do leque, mirando a 30° do eixo.
+        // Mirando para dentro, como estava, os dois se somavam no centro e
+        // deixavam um vale de seis decibéis na diagonal, que é justamente
+        // onde fica um terço das poltronas.
+        mira: (() => {
+          const p = polar(sec.alvo - foco.x, (Math.sign(f.y - foco.y) * 30) / grau);
+          return { x: p.x, y: p.y, z: nivelOuvidoEm(p.x) };
+        })()
+      };
+    });
+  }),
+  ...(() => {
+    const c = fontes.centro;
+    const coluna = gabinetesDe('C');
+    return c.secoes.map((sec, i) => ({
+      rotulo: `C${i + 1}`,
+      grupo: 'C',
+      ...centroAcustico(coluna.slice(i * c.caixasPorSecao, (i + 1) * c.caixasPorSecao)),
+      sens: sec.sens,
+      abertura: c.abertura,
+      aberturaV: sec.aberturaV,
+      mira: { x: sec.alvo, y: c.y, z: nivelOuvidoEm(sec.alvo) }
+    }));
+  })(),
   // O preenchimento de primeira fila mira em leque, como a plateia: cada caixa
   // atende a fatia que fica na sua frente, inclusive as poltronas que envolvem
   // a boca de cena.
-  ...Array.from({ length: reforcos.frontFill.caixas }, (_, i) => {
-    const n = reforcos.frontFill.caixas;
-    // Cada caixa fica sobre a linha radial da fatia de plateia que atende: o
-    // leque das poltronas e o leque do preenchimento são o mesmo leque.
-    // O leque de preenchimento vai de ponta a ponta da boca de cena, que é o
-    // ângulo em que a plateia ainda envolve o palco.
-    const aMax = Math.atan(palco.largura / 2 / (reforcos.frontFill.x - foco.x));
-    const ang = -aMax + (i / (n - 1)) * 2 * aMax;
-    const y = foco.y + (reforcos.frontFill.x - foco.x) * Math.tan(ang);
-    const raio = (reforcos.frontFill.x - foco.x) / Math.cos(ang);
+  ...gabinetesDe('FF').map((g, i) => {
+    const ff = reforcos.frontFill;
+    const ang = g.giro / grau;
+    const raio = (ff.x - foco.x) / Math.cos(ang);
     const alvo = polar(raio + 6, ang);
     return {
       rotulo: `FF${i + 1}`,
       grupo: 'FF',
-      x: reforcos.frontFill.x,
-      y,
-      z: reforcos.frontFill.z,
-      sens: reforcos.frontFill.sens,
-      abertura: reforcos.frontFill.abertura,
-      aberturaV: reforcos.frontFill.aberturaV,
+      x: g.x,
+      y: g.y,
+      z: g.z,
+      sens: ff.sens,
+      abertura: ff.abertura,
+      aberturaV: ff.aberturaV,
       mira: { x: alvo.x, y: alvo.y, z: 1.2 }
     };
   }),
-  // As poltronas que envolvem a boca de cena não são vistas por nenhum arranjo
-  // principal: quem as cobre é um par de caixas na quina do proscênio, mirando
-  // ao longo da própria coluna de poltronas.
-  ...[-1, 1].map((lado) => {
-    const alvo = polar(
-      reforcos.outFill.alvoRaio,
-      lado * reforcos.outFill.alvoGraus * (Math.PI / 180)
-    );
-    return {
-      rotulo: lado < 0 ? 'OF·L' : 'OF·R',
-      grupo: 'OF',
-      x: reforcos.outFill.x,
-      y: foco.y + lado * reforcos.outFill.dy,
-      z: reforcos.outFill.z,
-      sens: reforcos.outFill.sens,
-      abertura: reforcos.outFill.abertura,
-      aberturaV: reforcos.outFill.aberturaV,
-      mira: { x: alvo.x, y: alvo.y, z: nivelOuvidoEm(alvo.x) }
-    };
+  ...[-1, 1].flatMap((lado) => {
+    const of = reforcos.outFill;
+    const grupo = lado < 0 ? 'OF·L' : 'OF·R';
+    const coluna = gabinetesDe(grupo);
+    return of.secoes.map((sec, i) => {
+      const c = centroAcustico(
+        coluna.slice(i * of.caixasPorSecao, (i + 1) * of.caixasPorSecao)
+      );
+      const alvo = polar(sec.alvoRaio, (lado * sec.alvoGraus) / grau);
+      return {
+        rotulo: `${grupo}${i + 1}`,
+        grupo,
+        ...c,
+        sens: sec.sens,
+        abertura: of.abertura,
+        aberturaV: sec.aberturaV,
+        mira: { x: alvo.x, y: alvo.y, z: nivelOuvidoEm(alvo.x) }
+      };
+    });
   }),
   ...fontes.delays.flatMap((d) =>
-    fontes.angulosDelay.map((a, i) => {
-      const p = polar(d.raio, a);
-      const q = polar(d.raio + 11, a);
+    gabinetesDe(d.rotulo).map((g, i) => {
+      const q = polar(d.raio + 11, fontes.angulosDelay[i]);
       return {
-        rotulo: `${d.rotulo}.${i + 1}`,
+        rotulo: g.rotulo,
         grupo: d.rotulo,
-        x: p.x, y: p.y, z: d.altura,
-        sens: d.sens, abertura: d.abertura, aberturaV: d.aberturaV,
+        x: g.x,
+        y: g.y,
+        z: g.z,
+        sens: d.sens,
+        abertura: d.abertura,
+        aberturaV: d.aberturaV,
         // O delay aponta para a plateia logo à frente do anel.
         mira: { x: q.x, y: q.y, z: nivelOuvidoEm(q.x) }
       };
@@ -407,8 +691,10 @@ function foraDoEixo(cos, meia, d) {
   return Math.max(-16, -6 * (ang / meiaEf) ** 2);
 }
 
-/// SPL de uma caixa num ponto da plateia, em dB.
-function splCaixa(c, p) {
+/// SPL de uma caixa num ponto da plateia, em dB. Exportada porque o ajuste de
+/// ganho por seção precisa saber o que cada caixa entrega em cada poltrona —
+/// e porque um mapa que mostra "de quem é este decibel" sai daqui.
+export function splCaixa(c, p) {
   const v = { x: p.x - c.x, y: p.y - c.y, z: p.z - c.z };
   const d = Math.hypot(v.x, v.y, v.z);
   const m = { x: c.mira.x - c.x, y: c.mira.y - c.y, z: c.mira.z - c.z };

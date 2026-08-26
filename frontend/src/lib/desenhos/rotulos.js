@@ -51,6 +51,12 @@ const PT = {
     esc: 'esc.',
     painelLed: (l, a) => `PAINEL LED ${l} × ${a} m`,
     sub: (n) => `SUB · ${n} cx`,
+    /// Um conjunto de caixas, carimbado do mesmo jeito em toda prancha: sigla,
+    /// quantidade e cota de voo. A contagem vem do rack de gabinetes, nunca
+    /// digitada — foi digitando que a planta já disse dezesseis onde o corte
+    /// desenhava doze.
+    conjunto: (rotulo, n, voo) => `${rotulo} · ${n} cx · ▲ +${voo}`,
+    delay: (rotulo, n, voo, ms) => `${rotulo} · ${n} cx · ▲ +${voo} · ${ms} ms`,
     distancia: (d) => `${d} m — arranjo → última poltrona`,
     peDireito: (a, b, media) => `pé-direito ${a} a ${b} m · média ${media} m`,
     lugares: (p, m, t) => `${p} plateia + ${m} mezanino = ${t}`
@@ -238,14 +244,10 @@ const PT = {
       `não. Abaixo do desenho, o memorial que produz o T30 de ${t30} s citado na ` +
       `página: cada linha é uma superfície real, e a soma α·S é feita na hora em que ` +
       `a página é montada.`,
-    ff: (altura) => `FF · 12 cx · ▲ +${altura}`,
-    centro: (n, altura) => `C · ${n} cx · ▲ +${altura}`,
-    delay: (rotulo, altura, ms) => `${rotulo} · ▲ +${altura} · ${ms} ms`,
     forro: (de, ate) => `FORRO ACÚSTICO · α 0,65 · ${de} → ${ate} m`,
     mezanino: (lug) => `MEZANINO · ${lug} lug.`,
     peDireitoLivre: (v) => `pé-direito livre ${v} m`,
     sobMezanino: (v) => `sob o mezanino ${v} m`,
-    arranjo: (base) => `L/R · 16 cx · base ▲ +${base}`,
     memorial: 'MEMORIAL DE ABSORÇÃO · SABINE · 500 Hz',
     colunas: { superficie: 'SUPERFÍCIE', onde: 'ONDE', area: 'ÁREA m²' },
     absorcaoTotal: 'Absorção total A',
@@ -481,6 +483,8 @@ const EN = {
     esc: 'scale',
     painelLed: (l, a) => `LED WALL ${l} × ${a} m`,
     sub: (n) => `SUB · ${n} cab.`,
+    conjunto: (rotulo, n, voo) => `${rotulo} · ${n} cab. · ▲ +${voo}`,
+    delay: (rotulo, n, voo, ms) => `${rotulo} · ${n} cab. · ▲ +${voo} · ${ms} ms`,
     distancia: (d) => `${d} m — array → farthest seat`,
     peDireito: (a, b, media) => `ceiling ${a} to ${b} m · mean ${media} m`,
     lugares: (p, m, t) => `${p} floor + ${m} balcony = ${t}`
@@ -662,14 +666,11 @@ const EN = {
       `a balcony fits at all. Below the drawing, the schedule that produces the ` +
       `${t30} s T30 quoted on the page: every line is a real surface, and the α·S sum ` +
       `is computed as the page is built.`,
-    ff: (altura) => `FF · 12 cab. · ▲ +${altura}`,
-    centro: (n, altura) => `C · ${n} cab. · ▲ +${altura}`,
-    delay: (rotulo, altura, ms) => `${rotulo} · ▲ +${altura} · ${ms} ms`,
+
     forro: (de, ate) => `ACOUSTIC CEILING · α 0.65 · ${de} → ${ate} m`,
     mezanino: (lug) => `BALCONY · ${lug} seats`,
     peDireitoLivre: (v) => `clear height ${v} m`,
     sobMezanino: (v) => `under the balcony ${v} m`,
-    arranjo: (base) => `L/R · 16 cab. · base ▲ +${base}`,
     memorial: 'ABSORPTION SCHEDULE · SABINE · 500 Hz',
     colunas: { superficie: 'SURFACE', onde: 'WHERE', area: 'AREA m²' },
     absorcaoTotal: 'Total absorption A',

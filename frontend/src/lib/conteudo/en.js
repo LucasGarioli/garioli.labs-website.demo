@@ -72,7 +72,7 @@ export default {
   },
 
   hero: {
-    titulo: 'Acoustics, sound and light, solved on paper — not on site.',
+    titulo: 'The design is the filter between money invested and money wasted.',
     sub:
       'Acoustics, sound, lighting and video design for churches, auditoriums and studios. ' +
       'Calculated before it is bought — so the money is spent once, on what fixes the room.',

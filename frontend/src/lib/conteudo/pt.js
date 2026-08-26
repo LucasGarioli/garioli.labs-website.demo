@@ -66,10 +66,11 @@ export default {
   },
 
   hero: {
-    // O H1 e' o sinal de busca mais forte da pagina: ele nomeia as disciplinas
-    // e afirma o diferencial no mesmo folego. Uma frase bonita que nao afirma
-    // nada desperdica o unico lugar onde as duas coisas cabem juntas.
-    titulo: 'Projeto de acústica, som e luz que se resolve no cálculo — não na obra.',
+    // O H1 diz por que o projeto existe, em uma linha: quem chega aqui esta'
+    // decidindo se gasta com projeto ou direto com equipamento. As disciplinas
+    // — acustica, sonorizacao, iluminacao, video — ficam na linha logo abaixo,
+    // que e' onde a busca continua encontrando os termos.
+    titulo: 'O projeto é o filtro que separa o investimento do gasto desnecessário.',
     sub:
       'Projetos de acústica, sonorização, iluminação e vídeo para igrejas, auditórios e ' +
       'estúdios. Cálculo antes da compra — para você investir uma vez, no que resolve.',

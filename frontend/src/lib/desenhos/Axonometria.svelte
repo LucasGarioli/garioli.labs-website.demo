@@ -1,6 +1,6 @@
 <script>
   import {
-    obra, sala, foco, palco, plateia, mezanino, fontes, caixas,
+    obra, sala, foco, palco, plateia, mezanino, fontes, gabinetes, conjunto,
     fileirasPlateia, fileirasMezanino, lugares, polar, maiorDistancia, teto
   } from './projeto.js';
   import { formatador, rotulos } from './rotulos.js';
@@ -109,32 +109,21 @@
     ...arcoCheio(raioPeitoril, primeiroMez.abertura, mezanino.nivelFrente - 2.2).reverse()
   ]);
 
-  /// Cada caixa do projeto vira um blocozinho no lugar em que está pendurada.
-  /// O tamanho segue o grupo: um arranjo é uma coluna, um delay é uma caixa
-  /// solta e um preenchimento é quase um ponto.
-  const tamanhos = {
-    L: [0.8, 1.0, 1.2], R: [0.8, 1.0, 1.2], C: [0.8, 0.9, 2.0],
-    D1: [0.8, 0.9, 0.9], D2: [0.8, 0.9, 0.9],
-    FF: [0.5, 0.5, 0.45], OF: [0.7, 0.7, 1.4]
-  };
-  const equipamentos = caixas
-    .map((c) => {
-      const [dx, dy, dz] = tamanhos[c.grupo] ?? [0.7, 0.7, 0.7];
-      return {
-        grupo: c.grupo,
-        ordem: c.x + c.y,
-        faces: bloco(c.x - dx / 2, c.x + dx / 2, c.y - dy / 2, c.y + dy / 2, c.z - dz, c.z)
-      };
-    })
+  /// Cada gabinete do projeto vira um blocozinho no lugar exato em que está
+  /// pendurado, com o tamanho que ele tem de verdade. O tamanho vinha de uma
+  /// tabela própria deste desenho — e uma tabela própria é uma segunda versão
+  /// do sistema, que envelhece sozinha.
+  const equipamentos = gabinetes
+    .map((g) => ({
+      tipo: g.tipo,
+      ordem: g.x + g.y,
+      faces: bloco(
+        g.x - g.prof / 2, g.x + g.prof / 2,
+        g.y - g.larg / 2, g.y + g.larg / 2,
+        g.z - g.alt / 2, g.z + g.alt / 2
+      )
+    }))
     .sort((a, b) => a.ordem - b.ordem);
-
-  /// Os subgraves não estão na lista de caixas do mapa — eles não contribuem
-  /// para a cobertura de 4 kHz — mas estão no palco e no desenho.
-  const subs = Array.from({ length: fontes.subs.caixas }, (_, i) => {
-    const passo = palco.largura / fontes.subs.caixas;
-    const y = foco.y - palco.largura / 2 + (i + 0.5) * passo;
-    return bloco(fontes.subs.x - 0.5, fontes.subs.x + 0.5, y - passo * 0.36, y + passo * 0.36, 0, 1.0);
-  });
 
   const alcance = linha([
     [fontes.principais[0].x, fontes.principais[0].y, fontes.principais[0].altura],
@@ -222,9 +211,10 @@
     <path d={palcoBloco.frente} class="palco-face" />
     <path d={palcoBloco.lado} class="palco-face" />
     <path d={led} class="led" />
-    <!-- O rótulo desce para o canto vazio do palco: no centro ele fica por
-         baixo do arranjo R. -->
-    <text x={projX(palco.x0 + 7, foco.y + 10)} y={projY(palco.x0 + 7, foco.y + 10, palco.nivel) - 16}
+    <!-- O rótulo vai para a quina livre do palco, à frente e à esquerda: no
+         centro, e mesmo no canto de trás, ele fica por baixo de uma prumada
+         de caixas — o side hang é a mais baixa delas. -->
+    <text x={projX(palco.x0 + 5, foco.y + 16)} y={projY(palco.x0 + 5, foco.y + 16, palco.nivel) - 4}
           class="rot-area" text-anchor="middle">{r.comum.palco}</text>
 
     <!-- ————— plateia térrea ————— -->
@@ -244,15 +234,10 @@
     </g>
 
     <!-- ————— sistema ————— -->
-    {#each subs as s}
-      <path d={s.topo} class="sub-topo" />
-      <path d={s.frente} class="sub-face" />
-      <path d={s.lado} class="sub-face" />
-    {/each}
     {#each equipamentos as eq}
-      <path d={eq.faces.lado} class="eq-face eq-{eq.grupo}" />
-      <path d={eq.faces.frente} class="eq-face eq-{eq.grupo}" />
-      <path d={eq.faces.topo} class="eq-topo eq-{eq.grupo}" />
+      <path d={eq.faces.lado} class="eq-face eq-{eq.tipo}" />
+      <path d={eq.faces.frente} class="eq-face eq-{eq.tipo}" />
+      <path d={eq.faces.topo} class="eq-topo eq-{eq.tipo}" />
     {/each}
 
     {#each fontes.principais as fonte}
@@ -262,6 +247,20 @@
     <text x={projX(fontes.delays[1].raio + foco.x, foco.y)}
           y={projY(fontes.delays[1].raio + foco.x, foco.y, fontes.delays[1].altura + 1.4)}
           class="rot-fonte" text-anchor="middle">{fontes.delays[1].rotulo}</text>
+    <text x={projX(conjunto('SUB·V').x.meio, foco.y)}
+          y={projY(conjunto('SUB·V').x.meio, foco.y, conjunto('SUB·V').z.max + 1.4)}
+          class="rot-fonte" text-anchor="middle">SUB·V</text>
+    <!-- O cluster central fica sob a coluna de subgraves voados, no mesmo
+         eixo: o rótulo desce para o pé da coluna, senão os dois se escrevem
+         no mesmo ponto. -->
+    <text x={projX(conjunto('C').x.meio, foco.y)}
+          y={projY(conjunto('C').x.meio, foco.y, conjunto('C').z.min - 0.9)}
+          class="rot-fonte" text-anchor="middle">C</text>
+    {#each ['OF·L', 'OF·R'] as g}
+      <text x={projX(conjunto(g).x.meio, conjunto(g).y.meio)}
+            y={projY(conjunto(g).x.meio, conjunto(g).y.meio, conjunto(g).z.max + 1.4)}
+            class="rot-fonte" text-anchor="middle">{g}</text>
+    {/each}
 
     <!-- ————— maior distância ————— -->
     <path d={alcance} class="alcance" />
@@ -398,16 +397,20 @@
   .palco-face { fill: rgba(248, 244, 244, 0.03); stroke: var(--color-neutral-500); stroke-width: 1; }
   .led { fill: var(--color-accent-600); stroke: var(--color-accent-400); stroke-width: 0.8; }
 
-  .fileiras path { fill: none; stroke: rgba(248, 244, 244, 0.48); stroke-width: 1.5; }
+  /* Claro sobre claro é invisível: esta prancha não tem o piso escuro que a
+     planta tem, e as 32 fileiras da plateia sumiam na folha — a legenda
+     prometia um arco que o desenho não mostrava. */
+  .fileiras path { fill: none; stroke: var(--color-neutral-500); stroke-width: 1.5; }
   .fileiras-mez path { stroke: rgba(255, 118, 92, 0.6); }
   .laje { fill: rgba(255, 86, 60, 0.07); stroke: var(--color-accent-800); stroke-width: 1; }
   .peitoril { fill: rgba(255, 86, 60, 0.14); stroke: var(--color-accent-500); stroke-width: 1.2; }
 
   .eq-topo { stroke: var(--color-neutral-100); stroke-width: 0.6; }
   .eq-face { stroke: var(--color-neutral-100); stroke-width: 0.5; opacity: 0.85; }
-  .eq-L, .eq-R, .eq-C { fill: var(--color-accent-600); }
-  .eq-D1, .eq-D2 { fill: var(--color-accent-500); }
-  .eq-FF, .eq-OF { fill: var(--color-accent-800); }
+  .eq-arranjo, .eq-cluster { fill: var(--color-accent-600); }
+  .eq-delay { fill: var(--color-accent-500); }
+  .eq-fill, .eq-monitor { fill: var(--color-accent-800); }
+  .eq-sub { fill: rgba(140, 38, 24, 0.75); }
   .sub-topo { fill: var(--color-accent-800); stroke: var(--color-accent-600); stroke-width: 0.6; }
   .sub-face { fill: rgba(140, 38, 24, 0.55); stroke: var(--color-accent-700); stroke-width: 0.5; }
 
@@ -416,7 +419,7 @@
   .preenche-cota { fill: var(--color-neutral-500); }
 
   .sw-envoltoria { fill: rgba(248, 244, 244, 0.06); stroke: var(--color-neutral-500); stroke-width: 1; }
-  .sw-terrea { fill: rgba(248, 244, 244, 0.42); }
+  .sw-terrea { fill: var(--color-neutral-500); }
   .sw-mezanino { fill: rgba(255, 118, 92, 0.6); }
   .sw-arranjo { fill: var(--color-accent-600); }
   .sw-complemento { fill: var(--color-accent-800); }

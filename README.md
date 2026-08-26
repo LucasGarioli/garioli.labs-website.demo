@@ -121,20 +121,38 @@ acessível sem uma linha de `pointermove` escrita à mão.
 do estudo de caso desta página, projetado ponto a ponto a partir de
 `desenhos/projeto.js` por uma projeção de um ponto, com a câmera onde fica a
 mesa de som. A plateia é o leque real — cada fileira é um arco de raio
-verdadeiro, e os quatro corredores aparecem porque os blocos vêm do modelo. O
-que está pendurado está pendurado na cota do projeto: arranjos L/R de dezesseis
-caixas com a curvatura que a última fileira exige, cluster central, subgraves
-voados e de piso, preenchimento de primeira fila, retornos de palco, o primeiro
-anel de delay sobre a plateia — o segundo fica atrás da lente —, painel de LED
-com telas laterais, treliças de cena e a ilha de operação, com cabine de
-transmissão de um lado e sala de racks do outro. Mudar a geometria em
-`projeto.js` muda esta figura junto com as quatro pranchas.
+verdadeiro, e os quatro corredores aparecem porque os blocos vêm do modelo.
+
+**E o sistema é o mesmo elenco.** As cinco figuras desta página — planta, corte,
+axonometria, mapa de cobertura e este render — percorrem a mesma lista de
+**102 gabinetes**, cada um com centro, largura, profundidade, altura, giro e
+inclinação próprios. Nenhum desenho tem a sua própria cópia do sistema, então
+não existe onde dois deles discordarem: arranjos L/R de dezesseis caixas com a
+curvatura que a última fileira exige, cluster central de oito, coluna de seis
+subgraves voados empilhados — dois deles virados de costas, que é como se faz
+cardioide —, doze subgraves de piso, preenchimento de primeira fila, retornos de
+palco inclinados, os dois anéis de delay, painel de LED com telas laterais,
+treliças de cena e a ilha de operação. Os gabinetes são caixas de verdade em
+três dimensões, não retângulos girados: a banana do arranjo, o empilhamento do
+subgrave voado e o tombo dos monitores saem da geometria, não do traço.
+
+As salas técnicas ficam recuadas, uma de cada lado da ilha: cabine de
+transmissão e sala de racks, cada uma um volume fechado — estrado, laje, fundo,
+montantes e vidro sobre o parapeito — com a equipe sentada dentro. Mudar a
+geometria em `projeto.js` muda esta figura junto com as quatro pranchas.
 
 Os dois lados são SVG desenhado, não fotografia: gradiente por superfície,
 oclusão de ambiente nos cantos, fumaça para o feixe existir, grão de sensor por
 cima de tudo e silhuetas de 1,75 m no palco, que é de onde sai a escala. O
 componente aceita `antes` e `depois` como URLs — no dia em que houver foto do
 salão real, ela entra sem mexer no mecanismo.
+
+<img src="docs/img/home-comparador.jpg" alt="Comparador antes/depois do salão" />
+
+<sub><b>Comparador</b> — a mesma sala das pranchas, sob a divisa que o leitor
+arrasta: à esquerda o salão de hoje, à direita o projeto executado, com os
+arranjos na cota, a coluna de subgraves voados, os anéis de delay e a cabine
+envidraçada da operação.</sub>
 
 ### As pranchas e o glossário
 
@@ -157,15 +175,19 @@ corredores radiais e a cota em vermelho que dimensiona todo o sistema de som.</s
 
 <img src="docs/img/home-axo.jpg" alt="Axonometria isométrica do auditório" />
 
-<sub><b>AC-03 · axonometria</b> — envoltória, plateia térrea, mezanino e as 33
-caixas no mesmo desenho, em isométrica de 30°, com o traço da maior distância
+<sub><b>AC-03 · axonometria</b> — envoltória, plateia térrea, mezanino e os 102
+gabinetes no mesmo desenho, em isométrica de 30°, com o traço da maior distância
 coberta indo do arranjo até a última poltrona.</sub>
 
 <img src="docs/img/home-mapa.jpg" alt="Mapa de cobertura sonora" />
 
 <sub><b>Cobertura sonora</b> — cada célula da malha é o nível somado em energia
-das 33 caixas do sistema, medido na altura do ouvido da fileira em que ela
-cai.</sub>
+das 50 fontes do sistema — o centro acústico de cada seção dos 102 gabinetes —,
+medido na altura do ouvido da fileira em que ela cai. Variação de 7,2 dB entre a
+melhor e a pior poltrona, 5,6 dB em 90% delas, 92,5% dentro de ±3 dB da média:
+os ganhos de seção não são estimados no olho, saem de um ajuste resolvido sob
+duas regras de sistema real — shading monotônico e degrau de no máximo 6 dB
+entre seções vizinhas.</sub>
 
 <img src="docs/img/home-resultados.jpg" alt="Folha de resultados com T30, STI e as verificações" />
 
@@ -175,9 +197,9 @@ normativas com o critério ao lado do resultado.</sub>
 
 <img src="docs/img/home-modelo.jpg" alt="Modelo 3D navegável do auditório" />
 
-<sub><b>Modelo navegável</b> — as mesmas 5.065 poltronas e as mesmas 33 caixas
-das pranchas, girando no navegador, com cada poltrona pintada pelo nível
-calculado ali mesmo.</sub>
+<sub><b>Modelo navegável</b> — as mesmas 5.065 poltronas e os mesmos 102
+gabinetes das pranchas, girando no navegador, com cada poltrona pintada pelo
+nível calculado ali mesmo.</sub>
 
 Nenhum número dessas pranchas é digitado: geometria, níveis, T30 e STI saem de
 [`frontend/src/lib/desenhos/projeto.js`](frontend/src/lib/desenhos/projeto.js)
