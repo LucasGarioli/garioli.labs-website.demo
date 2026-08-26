@@ -1,11 +1,13 @@
 mod auth;
+mod documento;
 mod models;
 mod store;
 mod triagem;
 
 use auth::{Autenticado, Dono};
+use documento::{cpf_ou_cnpj_valido, cpf_valido, email_valido};
 use axum::{
-    extract::{ConnectInfo, Path, State},
+    extract::{ConnectInfo, Path, Query, State},
     http::{header, HeaderMap, Method, StatusCode},
     response::IntoResponse,
     routing::{get, post},
@@ -111,8 +113,13 @@ async fn eu(Autenticado(usuario): Autenticado) -> Json<UsuarioPublico> {
 
 // ---------- triagem pública ----------
 
-async fn get_schema() -> Json<Vec<Pergunta>> {
-    Json(triagem::schema())
+#[derive(serde::Deserialize)]
+struct IdiomaQuery {
+    lang: Option<String>,
+}
+
+async fn get_schema(Query(q): Query<IdiomaQuery>) -> Json<Vec<Pergunta>> {
+    Json(triagem::schema_em(triagem::Idioma::de(q.lang.as_deref())))
 }
 
 async fn post_solicitacao(
@@ -216,13 +223,15 @@ async fn recusar_solicitacao(
 
 // ---------- proposta ----------
 
-async fn get_proposta(State(store): State<Store>, Path(id): Path<String>) -> Resultado<Proposta> {
+async fn get_proposta(
+    State(store): State<Store>,
+    Path(id): Path<String>,
+) -> Resultado<PropostaPublica> {
     let d = store.ler();
     d.propostas
         .iter()
         .find(|p| p.id == id)
-        .cloned()
-        .map(Json)
+        .map(|p| Json(p.publica()))
         .ok_or_else(|| nao_encontrado("Proposta"))
 }
 
@@ -231,7 +240,7 @@ async fn aceitar_proposta(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Path(id): Path<String>,
     Json(aceite): Json<Aceite>,
-) -> Resultado<Proposta> {
+) -> Resultado<PropostaPublica> {
     let mut d = store.escrever();
     let p = d
         .propostas
@@ -239,21 +248,31 @@ async fn aceitar_proposta(
         .find(|p| p.id == id)
         .ok_or_else(|| nao_encontrado("Proposta"))?;
     p.aceita_em = Some(agora());
+    // A forma de pagamento é parte do aceite: é ela que fixa o valor da
+    // cláusula 4ª. Sem ela o contrato sairia oferecendo dois números.
+    p.forma_pagamento = Some(aceite.forma);
     p.observacoes = Some(aceite.observacoes.clone()).filter(|o| !o.trim().is_empty());
-    let copia = p.clone();
+    let publica = p.publica();
     drop(d);
 
+    let forma = match aceite.forma {
+        FormaPagamento::Avista => format!("pagamento à vista de {}", publica.pagamento.avista),
+        FormaPagamento::Parcelado => {
+            format!("{} parcelas de {}", publica.pagamento.parcelas, publica.pagamento.parcela)
+        }
+    };
     store.registrar(
         "Aceite",
         &format!(
-            "Proposta {} aceita {}",
+            "Proposta {} aceita {} — {}",
             id,
-            if aceite.observacoes.trim().is_empty() { "sem ressalvas" } else { "com observações" }
+            if aceite.observacoes.trim().is_empty() { "sem ressalvas" } else { "com observações" },
+            forma
         ),
         &addr.ip().to_string(),
         true,
     );
-    Ok(Json(copia))
+    Ok(Json(publica))
 }
 
 async fn gerar_contrato(
@@ -269,12 +288,24 @@ async fn gerar_contrato(
     if proposta.aceita_em.is_none() {
         return Err((StatusCode::CONFLICT, "A proposta precisa ser aceita antes do contrato".into()));
     }
+    // A validação do formulário no navegador é conveniência; a barreira é esta.
+    // O contrato identifica a parte pelo que for gravado aqui, e um CNPJ
+    // inválido só aparece quando for preciso cobrar.
+    for (ok, erro) in [
+        (cpf_ou_cnpj_valido(&dados.cnpj), "CNPJ ou CPF inválido"),
+        (cpf_valido(&dados.cpf_rep), "CPF do representante inválido"),
+        (email_valido(&dados.email), "E-mail inválido"),
+    ] {
+        if !ok {
+            return Err((StatusCode::UNPROCESSABLE_ENTITY, erro.into()));
+        }
+    }
 
     let contrato = Contrato {
         id: uuid::Uuid::new_v4().to_string(),
         numero: format!("CT-{}", id.trim_start_matches("PRJ-")),
         proposta_id: id.clone(),
-        clausulas: clausulas(&dados, &proposta),
+        clausulas: clausulas(&dados, &proposta.publica()),
         pdf_url: format!("/api/contratos/{}/pdf", id),
         whatsapp_url: "https://wa.me/5500000000000".into(),
         assinado_em: None,

@@ -17,11 +17,22 @@
 //! `store.rs`, e é ele que roda em produção.
 
 import { ErroApi } from './api-erros.js';
+import { traduzSchema } from './triagem-en.js';
+import { cpfOuCnpjValido, cpfValido, emailValido } from './documento.js';
 
 /** E-mail que entra como dono. Qualquer outro entra como cliente. */
 export const EMAIL_DONO = 'demo@exemplo.com';
 
-const CHAVE = 'gl_demo_v1';
+const CHAVE = 'gl_demo';
+
+/** Forma da semente. Sobe sempre que um campo mudar de tipo, de nome ou de
+ *  unidade.
+ *
+ *  Sem este número, um estado gravado antes da mudança volta do
+ *  `sessionStorage` sem erro nenhum — é JSON válido — e só aparece na tela,
+ *  como NaN em todo lugar onde havia dinheiro. Quem estivesse com a aba aberta
+ *  durante um deploy veria exatamente isso. */
+const VERSAO_ESTADO = 2;
 const LATENCIA = 180;
 
 // ---------- utilidades ----------
@@ -31,6 +42,26 @@ const uid = () =>
   `id-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
 
 const agora = () => new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+/** Um instante `dias` atrás, aquele dia às `hora` horas.
+ *
+ *  A semente é escrita em deslocamento e não em data fixa — a trilha de uma
+ *  demonstração aberta daqui a dois anos continua sendo de ontem, e não de um
+ *  passado esquecido. Mas o deslocamento tem de ser em DIA, não em horas
+ *  corridas: subtraindo horas do instante atual, uma demonstração aberta de
+ *  madrugada empurrava cada linha para o dia anterior e a trilha deixava de
+ *  bater com as datas do funil. As horas usadas ficam entre 9 e 17 justamente
+ *  para o dia em UTC e o dia local coincidirem nos fusos de uso. */
+const emDiaAs = (dias, hora) => {
+  const d = new Date();
+  d.setDate(d.getDate() - dias);
+  d.setHours(hora, 31, 44, 0);
+  return d.toISOString().replace(/\.\d{3}Z$/, 'Z');
+};
+
+/** Algumas horas atrás — para o que chegou hoje e não pode cair no futuro. */
+const horasAtras = (horas) =>
+  new Date(Date.now() - horas * 3_600_000).toISOString().replace(/\.\d{3}Z$/, 'Z');
 
 const espera = () => new Promise((r) => setTimeout(r, LATENCIA));
 
@@ -56,9 +87,88 @@ const publico = (u) => ({
 
 function semente() {
   return {
-    solicitacoes: [],
+    solicitacoes: [
+      {
+        id: uid(),
+        protocolo: 'SOL-2026-0149',
+        criada_em: horasAtras(3),
+        situacao: 'Aguardando análise',
+        solicitante: 'Rosana Vieira',
+        instituicao: 'Igreja Batista Central',
+        cidade: 'Marataízes · ES',
+        email: 'rosana@exemplo.com',
+        fone: '(28) 90000-0000',
+        premissas: [
+          { label: 'Uso do espaço', valor: 'Templo religioso' },
+          { label: 'Área declarada', valor: '300 a 600 m²' },
+          { label: 'Pé-direito', valor: '6 a 9 m' },
+          { label: 'Lotação típica', valor: '400 a 800 lugares' },
+          { label: 'Sintomas relatados', valor: 'Eco perceptível · Fala pouco inteligível' },
+          { label: 'Infraestrutura existente', valor: 'PA antigo, sem projeto' },
+          { label: 'Documentação', valor: 'Planta em PDF' },
+          { label: 'Prazo pretendido', valor: 'Até 3 meses' }
+        ],
+        frentes: [
+          {
+            titulo: 'Tratamento acústico',
+            descricao: 'Medição, cálculo de RT60 e projeto de tratamento.',
+            minimo_centavos: 480_000,
+            maximo_centavos: 840_000
+          },
+          {
+            titulo: 'Projeto de sonorização',
+            descricao: 'Dimensionamento de PA, fluxo de sinal e memorial para compra.',
+            minimo_centavos: 320_000,
+            maximo_centavos: 560_000
+          }
+        ],
+        faixa_minima_centavos: 800_000,
+        faixa_maxima_centavos: 1_400_000,
+        alertas: []
+      },
+      {
+        id: uid(),
+        protocolo: 'SOL-2026-0148',
+        criada_em: horasAtras(6),
+        situacao: 'Aguardando análise',
+        solicitante: 'Paulo Menezes',
+        instituicao: 'Espaço Multiuso Pedra Azul',
+        cidade: 'Domingos Martins · ES',
+        email: 'paulo@exemplo.com',
+        fone: '(27) 90000-0000',
+        premissas: [
+          { label: 'Uso do espaço', valor: 'Espaço de eventos' },
+          { label: 'Área declarada', valor: 'Não sei' },
+          { label: 'Pé-direito', valor: '4 a 6 m' },
+          { label: 'Lotação típica', valor: '150 a 300 lugares' },
+          { label: 'Sintomas relatados', valor: 'Vizinhos reclamam' },
+          { label: 'Infraestrutura existente', valor: 'Nada instalado' },
+          { label: 'Documentação', valor: 'Nenhuma' },
+          { label: 'Prazo pretendido', valor: 'Sem prazo definido' }
+        ],
+        frentes: [
+          {
+            titulo: 'Isolamento acústico',
+            descricao: 'Cálculo de perda de transmissão e projeto de fechamento.',
+            minimo_centavos: 500_000,
+            maximo_centavos: 900_000
+          }
+        ],
+        faixa_minima_centavos: 500_000,
+        faixa_maxima_centavos: 900_000,
+        alertas: [
+          'Área declarada como "não sei" exige visita antes de fechar valor.',
+          'Reclamação de vizinhos: verificar exigência legal municipal de ruído.'
+        ]
+      }
+    ],
     propostas: [
       {
+        /// O preço é guardado em centavos por item, e nada mais. Subtotal,
+        /// desconto, total, parcela e valor à vista são contas feitas na hora
+        /// de mostrar — em `propostaPublica`. Enquanto os três eram texto
+        /// digitado, mudar uma linha do escopo deixava o total mentindo, e o
+        /// mesmo valor aparecia uma quarta vez no funil do dono.
         id: 'PRJ-2026-0091',
         instituicao: 'Comunidade Vale Verde',
         cidade: 'Vila Nova · ES',
@@ -67,17 +177,17 @@ function semente() {
           {
             titulo: 'Projeto acústico',
             descricao: 'Medição, cálculo de RT60 e projeto de tratamento com reforma do forro.',
-            valor: 'R$ 6.000,00'
+            centavos: 600_000
           },
           {
             titulo: 'Projeto de sonorização',
             descricao: 'Dimensionamento de PA, fluxo de sinal e memorial para compra.',
-            valor: 'R$ 3.000,00'
+            centavos: 300_000
           },
           {
             titulo: 'Iluminação cênica básica',
             descricao: 'Plano de luz em camadas, circuitos e mapa de canais.',
-            valor: 'R$ 2.500,00'
+            centavos: 250_000
           }
         ],
         premissas: [
@@ -87,11 +197,18 @@ function semente() {
           { label: 'Prazo de entrega', valor: '30 dias úteis após 1ª parcela' },
           { label: 'Revisões incluídas', valor: '2 rodadas' }
         ],
-        total: 'R$ 10.000,00',
-        condicoes:
-          'Desconto de 10% aplicado. 2 parcelas de R$ 5.175,00 ou R$ 9.832,50 à vista. Valores ainda sujeitos a negociação.',
-        validade: '15 dias a contar do envio',
+        desconto_pct: 10,
+        parcelas: 2,
+        /// Quem paga à vista tira 5% do já descontado. É a diferença entre
+        /// receber em 30 dias e receber na assinatura.
+        desconto_avista_pct: 5,
+        /// Deslocamentos em dias, como o resto da demonstração: a proposta
+        /// enviada ontem continua tendo sido enviada ontem daqui a dois anos.
+        enviada_em_dias: -1,
+        validade_dias: 15,
         aceita_em: null,
+        /// Preenchido no aceite: é ele que decide o texto da cláusula 4ª.
+        forma_pagamento: null,
         observacoes: null
       }
     ],
@@ -99,9 +216,57 @@ function semente() {
     auditoria: [
       {
         id: uid(),
-        quando: agora(),
+        quando: emDiaAs(1, 16),
+        tipo: 'Assinatura',
+        evento: 'Contrato PRJ-2026-0088 assinado — Auditório Ipê Amarelo',
+        ip: '203.0.113.41',
+        critico: true
+      },
+      {
+        id: uid(),
+        quando: emDiaAs(1, 14),
+        tipo: 'Aceite',
+        evento: 'Proposta PRJ-2026-0088 aceita sem ressalvas — Auditório Ipê Amarelo',
+        ip: '203.0.113.41',
+        critico: true
+      },
+      {
+        id: uid(),
+        quando: emDiaAs(1, 11),
         tipo: 'Envio',
         evento: 'Proposta PRJ-2026-0091 enviada por e-mail e WhatsApp',
+        ip: '—',
+        critico: false
+      },
+      {
+        id: uid(),
+        quando: emDiaAs(5, 15),
+        tipo: 'Execução',
+        evento: 'Prazo suspenso em PRJ-2026-0074 — pendência do cliente registrada',
+        ip: '—',
+        critico: false
+      },
+      {
+        id: uid(),
+        quando: emDiaAs(14, 16),
+        tipo: 'Assinatura',
+        evento: 'Contrato PRJ-2026-0074 assinado — Igreja Monte Alto',
+        ip: '198.51.100.7',
+        critico: true
+      },
+      {
+        id: uid(),
+        quando: emDiaAs(14, 14),
+        tipo: 'Aceite',
+        evento: 'Proposta PRJ-2026-0074 aceita com observações — Igreja Monte Alto',
+        ip: '198.51.100.7',
+        critico: true
+      },
+      {
+        id: uid(),
+        quando: emDiaAs(24, 10),
+        tipo: 'Entrega',
+        evento: 'Projeto PRJ-2026-0061 entregue — Teatro Aurora',
         ip: '—',
         critico: false
       }
@@ -118,9 +283,15 @@ function restaurar() {
   if (typeof sessionStorage === 'undefined') return;
   try {
     const cru = sessionStorage.getItem(CHAVE);
-    if (cru) dados = JSON.parse(cru);
+    if (!cru) return;
+    const salvo = JSON.parse(cru);
+    if (salvo?.versao !== VERSAO_ESTADO || !salvo.dados) {
+      sessionStorage.removeItem(CHAVE);
+      return;
+    }
+    dados = salvo.dados;
   } catch {
-    // Aba anônima, storage bloqueado ou JSON de uma versão anterior: a demo
+    // Aba anônima, storage bloqueado ou JSON corrompido: a demonstração
     // recomeça da semente, que é um estado perfeitamente válido.
   }
 }
@@ -128,7 +299,7 @@ function restaurar() {
 function salvar() {
   if (typeof sessionStorage === 'undefined') return;
   try {
-    sessionStorage.setItem(CHAVE, JSON.stringify(dados));
+    sessionStorage.setItem(CHAVE, JSON.stringify({ versao: VERSAO_ESTADO, dados }));
   } catch {
     // Sem persistência a demo continua funcionando dentro da navegação atual.
   }
@@ -165,7 +336,8 @@ function exigeDono() {
 
 // ---------- triagem (porte de backend/src/triagem.rs) ----------
 
-const op = (val, desc) => ({ val, desc });
+// `val` é a chave da resposta e não muda com o idioma; `label` é o que se lê.
+const op = (val, desc) => ({ val, label: val, desc });
 
 const SCHEMA = [
   {
@@ -400,6 +572,71 @@ function alertasDe(respostas) {
   return out;
 }
 
+/** Real com centavos — o documento comercial mostra os dois dígitos. */
+const brl = (centavos) =>
+  'R$ ' + (centavos / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+/** A proposta como o cliente e o contrato a veem.
+ *
+ *  Tudo o que é dinheiro nasce aqui, da soma do escopo: o desconto é aplicado,
+ *  não afirmado, e a cláusula 4ª do contrato recebe o mesmo número que estava
+ *  na tela quando a pessoa clicou em aceitar. As datas nascem do deslocamento
+ *  guardado na proposta, de modo que a validade que o cliente lê é a mesma que
+ *  o dono vê expirando no funil. */
+function propostaPublica(p) {
+  const bruto = p.escopo.reduce((soma, e) => soma + e.centavos, 0);
+  const desconto = Math.round((bruto * p.desconto_pct) / 100);
+  const total = bruto - desconto;
+  const parcela = Math.round(total / p.parcelas);
+  const avista = total - Math.round((total * p.desconto_avista_pct) / 100);
+
+  const enviada = emDias(p.enviada_em_dias);
+  const expira = emDias(p.enviada_em_dias + p.validade_dias);
+
+  const pagamento = {
+    parcelas: p.parcelas,
+    parcela: brl(parcela),
+    parcela_centavos: parcela,
+    avista: brl(avista),
+    avista_centavos: avista,
+    desconto_avista_pct: p.desconto_avista_pct
+  };
+
+  /// A condição que entra no contrato descreve a forma escolhida, não as duas.
+  /// Antes do aceite não há forma escolhida, e o contrato não existe ainda.
+  const avistaEscolhido = p.forma_pagamento === 'avista';
+  const efetivo = avistaEscolhido ? avista : total;
+  const condicoes = avistaEscolhido
+    ? `Pagamento à vista de ${brl(avista)} na assinatura, já aplicado o desconto de ` +
+      `${p.desconto_avista_pct}% sobre o total de ${brl(total)}.`
+    : `Pagamento em ${p.parcelas} parcelas de ${brl(parcela)}: a primeira na assinatura e ` +
+      (p.parcelas === 2 ? 'a segunda 30 dias depois.' : 'as demais a cada 30 dias.');
+
+  return {
+    id: p.id,
+    instituicao: p.instituicao,
+    cidade: p.cidade,
+    maps_url: p.maps_url,
+    escopo: p.escopo.map((e) => ({ titulo: e.titulo, descricao: e.descricao, valor: brl(e.centavos) })),
+    premissas: p.premissas,
+    subtotal: brl(bruto),
+    desconto_pct: p.desconto_pct,
+    desconto: brl(desconto),
+    total: brl(total),
+    total_centavos: total,
+    efetivo: brl(efetivo),
+    pagamento,
+    condicoes,
+    enviada_em: dataBr(enviada),
+    expira_em: dataBr(expira),
+    validade_dias: p.validade_dias,
+    dias_restantes: faltam(expira),
+    aceita_em: p.aceita_em,
+    forma_pagamento: p.forma_pagamento,
+    observacoes: p.observacoes
+  };
+}
+
 // ---------- contrato (porte de store.rs::clausulas) ----------
 
 function clausulas(d, proposta) {
@@ -429,7 +666,7 @@ function clausulas(d, proposta) {
     {
       titulo: 'Cláusula 4ª — Do preço e do pagamento',
       texto:
-        `Pelo objeto, a CONTRATANTE pagará ${proposta.total}. ${proposta.condicoes} O atraso implica ` +
+        `Pelo objeto, a CONTRATANTE pagará ${proposta.efetivo}. ${proposta.condicoes} O atraso implica ` +
         `correção monetária, juros de 1% ao mês e multa de 2%, nos termos do art. 406 do Código Civil.`
     },
     {
@@ -488,43 +725,353 @@ function clausulas(d, proposta) {
 
 const contatoDe = (s) => [s.email, s.fone].filter((c) => c && c.trim()).join(' · ');
 
+// ---------- o cenário: um livro-razão só ----------
+
+/// Tudo o que o painel do dono mostra sai daqui. Duas decisões valem a leitura:
+///
+/// 1. **Os prazos são deslocamentos em dias, não datas fixas.** Uma parcela
+///    "vencida há nove dias" continua vencida há nove dias numa demonstração
+///    aberta daqui a dois anos. Data fixa envelhece; deslocamento, não.
+/// 2. **Nenhum KPI é digitado.** "Em negociação", "a receber em 30 dias",
+///    "vencido", o acumulado do MEI e o imposto do mês são somas deste livro,
+///    feitas na hora da chamada. Mudar o valor de uma parcela aqui muda o topo
+///    da tela, a barra do teto e a comparação de regimes de uma vez — não
+///    existe número que possa divergir de outro, porque só existe um número.
+
+const DIA = 86_400_000;
+
+function hoje() {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/** Data a `n` dias de hoje; `n` negativo é passado. */
+const emDias = (n) => new Date(hoje().getTime() + n * DIA);
+
+const dataBr = (d) =>
+  `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
+const diaMes = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+/** Dias corridos de hoje até `d`. */
+const faltam = (d) => Math.round((d.getTime() - hoje().getTime()) / DIA);
+
+/** Dias úteis entre duas datas, sem contar a inicial. Não há calendário de
+ *  feriados aqui: o número é de acompanhamento, não de contrato. */
+function diasUteis(de, ate) {
+  let n = 0;
+  const c = new Date(de.getTime());
+  while (c < ate) {
+    c.setDate(c.getDate() + 1);
+    const s = c.getDay();
+    if (s !== 0 && s !== 6) n += 1;
+  }
+  return n;
+}
+
+/** Real inteiro, sem centavos: é assim que o painel fala. */
+const brlCent = (centavos) => 'R$ ' + Math.round(centavos / 100).toLocaleString('pt-BR');
+
+const NEGOCIO = {
+  /// Serviços contratados. `recebido: null` é parcela que ainda não caiu — e é
+  /// o vencimento que decide se ela está a vencer ou vencida.
+  contratos: [
+    {
+      cliente: 'Escola Técnica Sul',
+      cidade: 'Cachoeiro de Itapemirim · ES',
+      escopo: 'Tratamento acústico de três salas de aula',
+      modelo: 'v2',
+      assinado: -180,
+      entregue: -159,
+      prazoUteis: 15,
+      parcelas: [{ valor: 950_000, vence: -159, recebido: -159 }]
+    },
+    {
+      cliente: 'Estúdio Marés',
+      cidade: 'Vitória · ES',
+      escopo: 'Sala de gravação · isolamento e tratamento',
+      modelo: 'v2',
+      assinado: -170,
+      entregue: -120,
+      prazoUteis: 35,
+      parcelas: [
+        { valor: 840_000, vence: -152, recebido: -152 },
+        { valor: 840_000, vence: -120, recebido: -120 }
+      ]
+    },
+    {
+      cliente: 'Teatro Aurora',
+      cidade: 'Cachoeiro de Itapemirim · ES',
+      escopo: 'Acústica e sonorização · sala de 420 lugares',
+      modelo: 'v2',
+      assinado: -103,
+      entregue: -24,
+      prazoUteis: 40,
+      parcelas: [
+        { valor: 900_000, vence: -54, recebido: -54 },
+        { valor: 900_000, vence: -24, recebido: -24 }
+      ]
+    },
+    {
+      cliente: 'Centro de Convenções Portal',
+      cidade: 'Guarapari · ES',
+      escopo: 'Laudo e medição de ruído · NBR 10151',
+      modelo: 'v2',
+      assinado: -40,
+      entregue: -20,
+      prazoUteis: 12,
+      parcelas: [{ valor: 380_000, vence: -9, recebido: null }]
+    },
+    {
+      cliente: 'Igreja Monte Alto',
+      cidade: 'Vila Velha · ES',
+      escopo: 'Projeto acústico do salão paroquial',
+      modelo: 'v3',
+      assinado: -14,
+      entregue: null,
+      prazoUteis: 30,
+      bloqueadoDesde: -5,
+      bloqueio: 'aguardando fotos do forro após a remoção do PVC',
+      frentes: [
+        { titulo: 'Levantamento', progresso: 100 },
+        { titulo: 'Cálculo RT60', progresso: 100 },
+        { titulo: 'Detalhamento', progresso: 55 },
+        { titulo: 'Memorial', progresso: 0 }
+      ],
+      parcelas: [
+        { valor: 600_000, vence: -14, recebido: -14 },
+        { valor: 600_000, vence: 21, recebido: null }
+      ]
+    },
+    {
+      cliente: 'Auditório Ipê Amarelo',
+      cidade: 'Linhares · ES',
+      escopo: 'Acústica, sonorização e luz cênica',
+      modelo: 'v3',
+      assinado: -2,
+      entregue: null,
+      prazoUteis: 45,
+      bloqueadoDesde: null,
+      frentes: [
+        { titulo: 'Levantamento', progresso: 40 },
+        { titulo: 'Cálculo RT60', progresso: 0 },
+        { titulo: 'Detalhamento', progresso: 0 },
+        { titulo: 'Memorial', progresso: 0 }
+      ],
+      parcelas: [
+        { valor: 800_000, vence: 10, recebido: null },
+        { valor: 800_000, vence: 40, recebido: null },
+        { valor: 800_000, vence: 70, recebido: null }
+      ]
+    }
+  ],
+
+  /// Propostas que ainda não viraram contrato. Só estas contam como "em
+  /// negociação": aceita já é ganho, e entra no funil como contrato.
+  propostas: [
+    { cliente: 'Colégio Santa Rita', valor: 750_000, etapa: 'Rascunho', desde: -1 },
+    { cliente: 'Arena Sul Eventos', valor: 1_620_000, etapa: 'Enviada', desde: -14, validade: 15 },
+    {
+      /// Sem `valor`: esta é a proposta que o cliente tem aberta, e o valor
+      /// dela é o total do escopo — resolvido em `propostasDoFunil`. Uma cópia
+      /// aqui é um número que envelhece na primeira vez que o escopo mudar.
+      cliente: 'Comunidade Vale Verde',
+      etapa: 'Enviada',
+      proposta_id: 'PRJ-2026-0091'
+    },
+    { cliente: 'Centro Cultural Praia Formosa', valor: 1_340_000, etapa: 'Aceita', desde: -1 }
+  ],
+
+  /// Cursos e licenças também são receita, e também contam para o teto do MEI —
+  /// esquecer disso é como se estoura o limite sem perceber.
+  produtos: [
+    {
+      tipo: 'Curso',
+      titulo: 'Acústica prática para igrejas',
+      descricao: '6 h · diagnóstico, materiais e erros comuns',
+      preco: 29_700,
+      base: 84,
+      vendasNoAno: 51,
+      vendasNoMes: 6
+    },
+    {
+      tipo: 'Curso',
+      titulo: 'Operação de mesa digital ao vivo',
+      descricao: '8 h · ganho, EQ, dinâmica',
+      preco: 39_700,
+      base: 51,
+      vendasNoAno: 38,
+      vendasNoMes: 4
+    },
+    {
+      tipo: 'Licença',
+      titulo: 'Calculadora de reverberação',
+      descricao: 'RT60 Sabine e Eyring · anual',
+      preco: 18_000,
+      base: 37,
+      vendasNoAno: 24,
+      vendasNoMes: 2
+    }
+  ],
+
+  limiteMei: 8_100_000,
+  /// DAS do MEI: valor fixo, não percentual. A alíquota que aparece na tabela é
+  /// a carga efetiva sobre a receita do mês, calculada.
+  dasMei: 7_600,
+  fatorR: 28
+};
+
+/** O funil com os valores e prazos resolvidos. A proposta que existe como
+ *  documento (a que o cliente abre em /proposta) empresta dela mesma o total e
+ *  o prazo de validade; as outras são só linhas do funil. */
+function propostasDoFunil() {
+  return NEGOCIO.propostas.map((p) => {
+    if (!p.proposta_id) return p;
+    const doc = dados.propostas.find((x) => x.id === p.proposta_id);
+    if (!doc) return p;
+    return {
+      ...p,
+      valor: propostaPublica(doc).total_centavos,
+      desde: doc.enviada_em_dias,
+      validade: doc.validade_dias
+    };
+  });
+}
+
+/** Parcelas de todos os contratos, com as datas já resolvidas. */
+function parcelasDoLivro() {
+  return NEGOCIO.contratos.flatMap((c) =>
+    c.parcelas.map((p, i) => ({
+      cliente: c.cliente,
+      ordem: `${i + 1} de ${c.parcelas.length}`,
+      valor: p.valor,
+      vence: emDias(p.vence),
+      recebido: p.recebido === null ? null : emDias(p.recebido)
+    }))
+  );
+}
+
+/** Uma apuração só, lida pelo Financeiro e pelo Planejamento tributário. Com
+ *  duas, uma tela dizia 59 % do teto enquanto a outra dizia 119 %. */
+function apuracao() {
+  const H = hoje();
+  const ano = H.getFullYear();
+  const mes = H.getMonth();
+  const parcelas = parcelasDoLivro();
+
+  const recebidasNoAno = parcelas.filter((p) => p.recebido && p.recebido.getFullYear() === ano);
+  const servicosNoAno = recebidasNoAno.reduce((a, p) => a + p.valor, 0);
+  const servicosNoMes = recebidasNoAno
+    .filter((p) => p.recebido.getMonth() === mes)
+    .reduce((a, p) => a + p.valor, 0);
+
+  const produtosNoAno = NEGOCIO.produtos.reduce((a, p) => a + p.preco * p.vendasNoAno, 0);
+  const produtosNoMes = NEGOCIO.produtos.reduce((a, p) => a + p.preco * p.vendasNoMes, 0);
+
+  return {
+    ano,
+    faturadoNoAno: servicosNoAno + produtosNoAno,
+    receitaDoMes: servicosNoMes + produtosNoMes,
+    limite: NEGOCIO.limiteMei
+  };
+}
+
 function adminResumo() {
+  const H = hoje();
+  const ap = apuracao();
+  const parcelas = parcelasDoLivro();
   const pendentes = dados.solicitacoes.filter((s) => s.situacao === 'Aguardando análise');
 
-  const acoes = pendentes.map((s) => ({
-    tipo: 'Triagem',
-    texto: `Nova solicitação — ${s.instituicao || s.solicitante}`,
-    prazo: 'hoje',
-    urgente: true,
-    cta: 'Aprovar',
-    solicitacao_id: s.id,
-    contato: contatoDe(s)
-  }));
+  const vencidas = parcelas.filter((p) => !p.recebido && p.vence < H);
+  const aReceber = parcelas.filter((p) => !p.recebido && p.vence >= H);
+  const em30 = aReceber.filter((p) => p.vence <= emDias(30));
 
-  acoes.push(
-    {
+  const propostas = propostasDoFunil();
+  const abertas = propostas.filter((p) => p.etapa === 'Rascunho' || p.etapa === 'Enviada');
+  const emNegociacao = abertas.reduce((a, p) => a + p.valor, 0);
+
+  const emExecucao = NEGOCIO.contratos.filter((c) => c.entregue === null);
+  const entregues = NEGOCIO.contratos.filter((c) => c.entregue !== null);
+
+  const expiraEm = (p) => faltam(emDias(p.desde + p.validade));
+  const enviadas = propostas.filter((p) => p.etapa === 'Enviada');
+
+  const prazo = (n) => (n === 0 ? 'hoje' : n === 1 ? 'amanhã' : `${n} dias`);
+  const emPrazo = (n) => (n === 0 ? 'hoje' : n === 1 ? 'amanhã' : `em ${n} dias`);
+  /// Para trás no tempo "amanhã" não serve: um rascunho de ontem é "ontem", não
+  /// "há amanhã".
+  const desdeQuando = (n) => (n === 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`);
+  const atraso = (p) => -faltam(p.vence);
+
+  /// A fila de hoje não é uma lista escrita: é o que o livro tem de pendente
+  /// agora, na ordem em que dói. Se nada estiver vencido, a linha some.
+  const acoes = [
+    ...pendentes.map((s) => ({
+      tipo: 'Triagem',
+      texto: `Nova solicitação — ${s.instituicao || s.solicitante}`,
+      prazo: 'hoje',
+      urgente: true,
+      cta: 'Aprovar',
+      solicitacao_id: s.id,
+      contato: contatoDe(s)
+    })),
+    ...vencidas.map((p) => ({
       tipo: 'Financeiro',
-      texto: 'Parcela 2 vencida — Igreja Monte Alto',
-      prazo: '9 dias',
+      texto: `Parcela ${p.ordem} vencida — ${p.cliente}`,
+      prazo: prazo(atraso(p)),
       urgente: true,
       cta: 'Cobrar',
       solicitacao_id: null
-    },
-    {
-      tipo: 'Proposta',
-      texto: 'Proposta PRJ-2026-0091 expira em 3 dias',
-      prazo: '09/09',
-      urgente: false,
-      cta: 'Prorrogar',
-      solicitacao_id: null
-    }
-  );
+    })),
+    ...enviadas
+      .filter((p) => expiraEm(p) <= 3)
+      .map((p) => ({
+        tipo: 'Proposta',
+        texto: `Proposta de ${p.cliente} expira ${emPrazo(expiraEm(p))}`,
+        prazo: diaMes(emDias(p.desde + p.validade)),
+        urgente: expiraEm(p) <= 1,
+        cta: 'Prorrogar',
+        solicitacao_id: null
+      })),
+    ...emExecucao
+      .filter((c) => c.bloqueadoDesde !== null)
+      .map((c) => ({
+        tipo: 'Execução',
+        texto: `${c.cliente} parado ${desdeQuando(-c.bloqueadoDesde)} — ${c.bloqueio}`,
+        prazo: diaMes(emDias(c.bloqueadoDesde)),
+        urgente: -c.bloqueadoDesde >= 5,
+        cta: 'Destravar',
+        solicitacao_id: null
+      }))
+  ];
+
+  const totalDe = (c) => c.parcelas.reduce((a, p) => a + p.valor, 0);
+  const corridosDe = (c) =>
+    diasUteis(emDias(c.assinado), c.bloqueadoDesde === null ? H : emDias(c.bloqueadoDesde));
 
   return {
     kpis: [
-      { label: 'Em negociação', valor: 'R$ 40.000', sub: '5 propostas abertas', alerta: false },
-      { label: 'A receber em 30 dias', valor: 'R$ 12.000', sub: '4 parcelas', alerta: false },
-      { label: 'Vencido', valor: 'R$ 2.500', sub: '1 parcela, 9 dias', alerta: true },
+      {
+        label: 'Em negociação',
+        valor: brlCent(emNegociacao),
+        sub: `${abertas.length} propostas abertas`,
+        alerta: false
+      },
+      {
+        label: 'A receber em 30 dias',
+        valor: brlCent(em30.reduce((a, p) => a + p.valor, 0)),
+        sub: `${em30.length} parcelas`,
+        alerta: false
+      },
+      {
+        label: 'Vencido',
+        valor: brlCent(vencidas.reduce((a, p) => a + p.valor, 0)),
+        sub: vencidas.length
+          ? `${vencidas.length} parcela${vencidas.length > 1 ? 's' : ''}, ${prazo(Math.max(...vencidas.map(atraso)))}`
+          : 'nada em atraso',
+        alerta: vencidas.length > 0
+      },
       {
         label: 'Solicitações na fila',
         valor: String(pendentes.length),
@@ -546,127 +1093,135 @@ function adminResumo() {
           contato: contatoDe(s)
         }))
       },
-      { titulo: 'Rascunho', cards: [] },
-      {
-        titulo: 'Enviada',
-        cards: [
-          { cliente: 'Comunidade Vale Verde', valor: 'R$ 10.000', idade: 'expira em 3 dias', parado: true }
-        ]
-      },
-      {
-        titulo: 'Aceita',
-        cards: [
-          { cliente: 'Auditório Ipê Amarelo', valor: 'R$ 24.000', idade: 'contrato pendente', parado: false }
-        ]
-      },
+      ...['Rascunho', 'Enviada', 'Aceita'].map((etapa) => ({
+        titulo: etapa,
+        cards: propostas
+          .filter((p) => p.etapa === etapa)
+          .map((p) => ({
+            cliente: p.cliente,
+            valor: brlCent(p.valor),
+            idade:
+              etapa === 'Enviada'
+                ? `expira ${emPrazo(expiraEm(p))}`
+                : etapa === 'Aceita'
+                  ? 'contrato pendente'
+                  : desdeQuando(-p.desde),
+            parado: etapa === 'Enviada' && expiraEm(p) <= 3
+          }))
+      })),
       {
         titulo: 'Em execução',
-        cards: [{ cliente: 'Igreja Monte Alto', valor: 'R$ 4.500', idade: 'dia 18 de 30', parado: false }]
+        cards: emExecucao.map((c) => ({
+          cliente: c.cliente,
+          valor: brlCent(totalDe(c)),
+          idade: `dia ${corridosDe(c)} de ${c.prazoUteis} úteis`,
+          parado: c.bloqueadoDesde !== null
+        }))
       },
       {
         titulo: 'Entregue',
-        cards: [{ cliente: 'Teatro Aurora', valor: 'R$ 9.800', idade: 'entregue 02/08', parado: false }]
+        cards: entregues.map((c) => ({
+          cliente: c.cliente,
+          valor: brlCent(totalDe(c)),
+          idade: `entregue ${diaMes(emDias(c.entregue))}`,
+          parado: false
+        }))
       }
     ],
     financeiro: {
-      ano: 2026,
-      mei_faturado: 4_800_000,
-      mei_limite: 8_100_000,
+      ano: ap.ano,
+      mei_faturado: ap.faturadoNoAno,
+      mei_limite: ap.limite,
       kpis: [
-        { label: 'Recebido em 2026', valor: 'R$ 48.000', sub: '59% do limite MEI', alerta: false },
-        { label: 'A receber', valor: 'R$ 20.000', sub: 'contratos assinados', alerta: false },
-        { label: 'Vencido', valor: 'R$ 2.500', sub: 'sujeito a multa e juros', alerta: true }
-      ],
-      parcelas: [
         {
-          cliente: 'Igreja Monte Alto',
-          parcela: '2 de 2',
-          valor_centavos: 250_000,
-          vencimento: '16/08/2026',
-          situacao: 'Vencida'
+          label: `Recebido em ${ap.ano}`,
+          valor: brlCent(ap.faturadoNoAno),
+          sub: `${Math.round((ap.faturadoNoAno / ap.limite) * 100)}% do limite MEI`,
+          alerta: ap.faturadoNoAno > ap.limite
         },
         {
-          cliente: 'Auditório Ipê Amarelo',
-          parcela: '1 de 3',
-          valor_centavos: 800_000,
-          vencimento: '05/09/2026',
-          situacao: 'A vencer'
+          label: 'A receber',
+          valor: brlCent(aReceber.reduce((a, p) => a + p.valor, 0)),
+          sub: 'contratos assinados',
+          alerta: false
         },
         {
-          cliente: 'Teatro Aurora',
-          parcela: '2 de 2',
-          valor_centavos: 500_000,
-          vencimento: '02/08/2026',
-          situacao: 'Recebida'
-        },
-        {
-          cliente: 'Aditivo técnico — Auditório Ipê Amarelo',
-          parcela: 'cortesia',
-          valor_centavos: 0,
-          vencimento: '—',
-          situacao: 'Isento'
+          label: 'Vencido',
+          valor: brlCent(vencidas.reduce((a, p) => a + p.valor, 0)),
+          sub: 'sujeito a multa e juros',
+          alerta: vencidas.length > 0
         }
-      ]
+      ],
+      /// A tabela mostra o que exige olho: o que venceu, o que vai vencer e as
+      /// três últimas entradas. O histórico inteiro não cabe nem ajuda.
+      parcelas: [
+        ...vencidas,
+        ...aReceber.slice().sort((a, b) => a.vence - b.vence),
+        ...parcelas
+          .filter((p) => p.recebido)
+          .sort((a, b) => b.recebido - a.recebido)
+          .slice(0, 3)
+      ].map((p) => ({
+        cliente: p.cliente,
+        parcela: p.ordem,
+        valor_centavos: p.valor,
+        vencimento: dataBr(p.vence),
+        situacao: p.recebido ? 'Recebida' : p.vence < H ? 'Vencida' : 'A vencer'
+      }))
     },
-    execucao: [
-      {
-        titulo: 'Igreja Monte Alto · projeto acústico',
-        prazo: 'dia 18 de 30 úteis · entrega 11/09/2026',
-        frentes: [
-          { titulo: 'Levantamento', progresso: 100, situacao: 'Concluído' },
-          { titulo: 'Cálculo RT60', progresso: 100, situacao: 'Concluído' },
-          { titulo: 'Detalhamento', progresso: 55, situacao: 'Em andamento' },
-          { titulo: 'Memorial', progresso: 0, situacao: 'Não iniciado' }
-        ],
-        bloqueio: 'aguardando fotos do forro após remoção do PVC — prazo suspenso desde 21/08.'
-      }
-    ],
-    produtos: [
-      {
-        tipo: 'Curso',
-        titulo: 'Acústica prática para igrejas',
-        descricao: '6 h · diagnóstico, materiais e erros comuns',
-        preco: 'R$ 297',
-        volume: '84 alunos'
-      },
-      {
-        tipo: 'Curso',
-        titulo: 'Operação de mesa digital ao vivo',
-        descricao: '8 h · ganho, EQ, dinâmica',
-        preco: 'R$ 397',
-        volume: '51 alunos'
-      },
-      {
-        tipo: 'Licença',
-        titulo: 'Calculadora de reverberação',
-        descricao: 'RT60 Sabine e Eyring · anual',
-        preco: 'R$ 180/ano',
-        volume: '37 ativas'
-      }
-    ],
+    execucao: emExecucao.map((c) => {
+      const corridos = corridosDe(c);
+      const restam = Math.max(0, c.prazoUteis - corridos);
+      return {
+        titulo: `${c.cliente} · ${c.escopo.toLowerCase()}`,
+        prazo:
+          c.bloqueadoDesde === null
+            ? `dia ${corridos} de ${c.prazoUteis} úteis · entrega ${dataBr(
+                emDias(c.assinado + Math.ceil(c.prazoUteis * 1.4))
+              )}`
+            : `dia ${corridos} de ${c.prazoUteis} úteis · ${restam} dias úteis restantes após destravar`,
+        frentes: c.frentes.map((f) => ({
+          titulo: f.titulo,
+          progresso: f.progresso,
+          situacao: f.progresso === 100 ? 'Concluído' : f.progresso > 0 ? 'Em andamento' : 'Não iniciado'
+        })),
+        bloqueio:
+          c.bloqueadoDesde === null
+            ? null
+            : `${c.bloqueio} — prazo suspenso desde ${diaMes(emDias(c.bloqueadoDesde))}.`
+      };
+    }),
+    produtos: NEGOCIO.produtos.map((p) => ({
+      tipo: p.tipo,
+      titulo: p.titulo,
+      descricao: p.descricao,
+      preco: p.tipo === 'Licença' ? `${brlCent(p.preco)}/ano` : brlCent(p.preco),
+      volume: `${p.base} ${p.tipo === 'Licença' ? 'ativas' : 'alunos'}`,
+      no_ano: `${brlCent(p.preco * p.vendasNoAno)} em ${ap.ano}`
+    })),
     modelos: [
       {
         titulo: 'Proposta técnica e comercial',
         descricao: 'Premissas, cronograma e onboarding',
         versao: 'v4',
-        data: '25/08/2026',
-        uso: '5 propostas ativas',
+        data: dataBr(emDias(-1)),
+        uso: `${propostas.length} propostas ativas`,
         congelado: false
       },
       {
         titulo: 'Contrato de prestação de serviços',
         descricao: 'Projeto acústico e audiovisual · MEI',
         versao: 'v3',
-        data: '25/08/2026',
-        uso: '3 contratos vigentes',
+        data: dataBr(emDias(-1)),
+        uso: `${emExecucao.length} contratos vigentes`,
         congelado: false
       },
       {
         titulo: 'Contrato de prestação de serviços',
         descricao: 'Versão anterior, sem suspensão por inadimplência',
         versao: 'v2',
-        data: '12/08/2026',
-        uso: '1 contrato congelado nesta versão',
+        data: dataBr(emDias(-14)),
+        uso: `${NEGOCIO.contratos.filter((c) => c.modelo === 'v2').length} contratos congelados nesta versão`,
         congelado: true
       }
     ]
@@ -674,6 +1229,16 @@ function adminResumo() {
 }
 
 function minhaConta(usuario) {
+  /// As datas saem da própria proposta e do próprio contrato, não de uma
+  /// segunda lista: a proposta que o cliente vê expirando é a mesma que o dono
+  /// vê expirando no funil, e o contrato assinado é o mesmo contrato do
+  /// livro-razão. Duas listas divergiriam no primeiro dia em que alguém
+  /// mexesse numa delas.
+  const aberta = dados.propostas[0];
+  const enviadaEm = aberta.enviada_em_dias;
+  const validadeDias = aberta.validade_dias;
+  const assinadoEm = NEGOCIO.contratos.find((c) => c.cliente === 'Igreja Monte Alto').assinado;
+
   return {
     nome: usuario.nome,
     iniciais: iniciaisDe(usuario.nome),
@@ -681,17 +1246,17 @@ function minhaConta(usuario) {
       {
         id: 'PRJ-2026-0091',
         titulo: 'Projeto acústico, sonorização e iluminação cênica',
-        meta: 'Comunidade Vale Verde · entrega prevista 14/10/2026',
+        meta: `Comunidade Vale Verde · entrega prevista ${dataBr(emDias(enviadaEm + validadeDias + 30))}`,
         status: 'Aguardando seu aceite',
         destaque: true,
         fase: 1,
         cta: 'Ver proposta e aceitar',
-        pendencia: 'Proposta válida até 09/09/2026.'
+        pendencia: `Proposta válida até ${dataBr(emDias(enviadaEm + validadeDias))}.`
       },
       {
         id: 'PRJ-2026-0074',
         titulo: 'Projeto acústico do salão paroquial',
-        meta: 'Igreja Monte Alto · contrato assinado em 12/08/2026',
+        meta: `Igreja Monte Alto · contrato assinado em ${dataBr(emDias(assinadoEm))}`,
         status: 'Em execução',
         destaque: false,
         fase: 4,
@@ -722,7 +1287,7 @@ function minhaConta(usuario) {
         titulo: 'Calculadora de reverberação',
         descricao: 'RT60 por Sabine e Eyring',
         chave: 'GLB-RT60-8842-XK',
-        vencimento: 'Renova 12/10/2026',
+        vencimento: `Renova ${dataBr(emDias(47))}`,
         situacao: 'Ativa',
         ativa: true
       },
@@ -730,7 +1295,7 @@ function minhaConta(usuario) {
         titulo: 'Gerador de mapa DMX',
         descricao: 'Endereçamento e cenas',
         chave: 'GLB-DMX-0417-BR',
-        vencimento: 'Expirou 02/06/2026',
+        vencimento: `Expirou ${dataBr(emDias(-85))}`,
         situacao: 'Expirada',
         ativa: false
       }
@@ -739,13 +1304,13 @@ function minhaConta(usuario) {
       {
         tipo: 'Proposta',
         titulo: 'Proposta técnica e comercial · PRJ-2026-0091',
-        data: '25/08/2026',
+        data: dataBr(emDias(enviadaEm)),
         url: '#'
       },
       {
         tipo: 'Contrato',
         titulo: 'Contrato de prestação de serviços · Monte Alto',
-        data: '12/08/2026',
+        data: dataBr(emDias(assinadoEm)),
         url: '#'
       }
     ]
@@ -753,46 +1318,61 @@ function minhaConta(usuario) {
 }
 
 function impostos() {
-  const LIMITE_MEI = 8_100_000;
-  const ACUMULADO = 9_600_000;
-  const RECEITA_MES = 1_800_000;
-  const FATOR_R = 28.0;
-  const parcela = (aliquota) => Math.trunc((RECEITA_MES * aliquota) / 100);
+  const ap = apuracao();
+  const excedente = Math.max(0, ap.faturadoNoAno - ap.limite);
+  const excedentePct = (excedente / ap.limite) * 100;
+  /// Arredonda para real inteiro: centavo em comparação de regime é ruído.
+  const imposto = (aliquota) => Math.round((ap.receitaDoMes * aliquota) / 100 / 100) * 100;
+
+  /// A regra que decide a gravidade: até 20% de excedente o desenquadramento
+  /// vale a partir de janeiro do ano seguinte; acima de 20%, retroage ao início
+  /// do ano — e aí a conta muda de tamanho.
+  const retroativo = excedentePct > 20;
 
   return {
-    acumulado_centavos: ACUMULADO,
-    limite_mei_centavos: LIMITE_MEI,
-    percentual_do_limite: (ACUMULADO / LIMITE_MEI) * 100,
-    alerta:
-      'Acumulado acima do teto do MEI. Migrar para ME no Simples e manter o Fator R garante ' +
-      'Anexo III (6%) em vez de Anexo V (15,5%).',
+    acumulado_centavos: ap.faturadoNoAno,
+    limite_mei_centavos: ap.limite,
+    percentual_do_limite: (ap.faturadoNoAno / ap.limite) * 100,
+    alerta: excedente
+      ? `Teto do MEI ultrapassado em ${brlCent(excedente)} (${excedentePct
+          .toFixed(1)
+          .replace('.', ',')}% acima). ` +
+        (retroativo
+          ? 'Excedente acima de 20%: o desenquadramento retroage a janeiro deste ano. '
+          : 'Excedente abaixo de 20%: o desenquadramento vale a partir de janeiro do ano que vem. ') +
+        'Migrar para ME no Simples e manter o Fator R garante Anexo III (6%) em vez de Anexo V (15,5%).'
+      : 'Dentro do teto do MEI. O Anexo III do Simples só passa a valer a pena se o faturamento ultrapassar o limite.',
     regimes: [
       {
         nome: 'MEI · DAS fixo',
-        carga_efetiva: 0.4,
-        imposto_mes_centavos: 7_600,
-        recomendado: false,
-        nota:
-          'Teto anual de R$ 81 mil já ultrapassado — excedente acima de 20% obriga ' +
-          'desenquadramento retroativo.'
+        carga_efetiva: Number(((NEGOCIO.dasMei / ap.receitaDoMes) * 100).toFixed(1)),
+        imposto_mes_centavos: NEGOCIO.dasMei,
+        recomendado: !excedente,
+        nota: excedente
+          ? `Teto anual de ${brlCent(ap.limite)} já ultrapassado — ${
+              retroativo
+                ? 'excedente acima de 20% obriga desenquadramento retroativo'
+                : 'desenquadramento a partir de janeiro'
+            }.`
+          : `Dentro do teto anual de ${brlCent(ap.limite)}.`
       },
       {
         nome: 'ME · Simples, Anexo III',
         carga_efetiva: 6.0,
-        imposto_mes_centavos: parcela(6.0),
-        recomendado: true,
+        imposto_mes_centavos: imposto(6.0),
+        recomendado: !!excedente,
         nota: 'Exige Fator R ≥ 28% da receita em folha/pró-labore.'
       },
       {
         nome: 'ME · Simples, Anexo V',
         carga_efetiva: 15.5,
-        imposto_mes_centavos: parcela(15.5),
+        imposto_mes_centavos: imposto(15.5),
         recomendado: false,
         nota: 'É onde a atividade cai se o pró-labore ficar abaixo de 28% da receita.'
       }
     ],
-    fator_r_minimo: FATOR_R,
-    pro_labore_sugerido_centavos: Math.trunc((RECEITA_MES * FATOR_R) / 100)
+    fator_r_minimo: NEGOCIO.fatorR,
+    pro_labore_sugerido_centavos: Math.round((ap.receitaDoMes * NEGOCIO.fatorR) / 100 / 100) * 100
   };
 }
 
@@ -855,9 +1435,9 @@ export const api = {
     return publico(exigeAutenticado());
   },
 
-  async triagemSchema() {
+  async triagemSchema(lang = 'pt') {
     await espera();
-    return SCHEMA;
+    return lang === 'en' ? traduzSchema(SCHEMA) : SCHEMA;
   },
 
   async criarSolicitacao({ respostas, contato, criar_conta }) {
@@ -924,36 +1504,52 @@ export const api = {
   async proposta(id) {
     await espera();
     const p = dados.propostas.find((x) => x.id === id);
-    if (!p) throw new ErroApi(404, 'Proposta não encontrado');
-    return p;
+    if (!p) throw new ErroApi(404, 'Proposta não encontrada');
+    return propostaPublica(p);
   },
 
-  async aceitarProposta(id, { observacoes } = {}) {
+  async aceitarProposta(id, { observacoes, forma } = {}) {
     await espera();
     const p = dados.propostas.find((x) => x.id === id);
-    if (!p) throw new ErroApi(404, 'Proposta não encontrado');
+    if (!p) throw new ErroApi(404, 'Proposta não encontrada');
+    /// A forma de pagamento é escolhida no aceite, não deixada em aberto: o
+    /// contrato precisa dizer um valor, e um documento que oferece dois é um
+    /// documento que ainda vai ser discutido.
+    if (forma !== 'parcelado' && forma !== 'avista') {
+      throw new ErroApi(422, 'Escolha a forma de pagamento antes de aceitar');
+    }
     p.aceita_em = agora();
+    p.forma_pagamento = forma;
     p.observacoes = observacoes?.trim() ? observacoes : null;
     salvar();
+    const publica = propostaPublica(p);
     registrar(
       'Aceite',
-      `Proposta ${id} aceita ${observacoes?.trim() ? 'com observações' : 'sem ressalvas'}`,
+      `Proposta ${id} aceita ${observacoes?.trim() ? 'com observações' : 'sem ressalvas'} — ` +
+        `${forma === 'avista' ? 'pagamento à vista' : `${publica.pagamento.parcelas} parcelas`} de ` +
+        `${forma === 'avista' ? publica.pagamento.avista : publica.pagamento.parcela}`,
       true
     );
-    return p;
+    return publica;
   },
 
   async dadosContrato(id, d) {
     await espera();
     const p = dados.propostas.find((x) => x.id === id);
-    if (!p) throw new ErroApi(404, 'Proposta não encontrado');
+    if (!p) throw new ErroApi(404, 'Proposta não encontrada');
     if (!p.aceita_em) throw new ErroApi(409, 'A proposta precisa ser aceita antes do contrato');
+    /// Validação de formulário no navegador é conveniência; a barreira é aqui.
+    /// Um contrato sai com a parte identificada pelo que for gravado neste
+    /// campo, e um CNPJ inválido só aparece quando for preciso cobrar.
+    if (!cpfOuCnpjValido(d.cnpj)) throw new ErroApi(422, 'CNPJ ou CPF inválido');
+    if (!cpfValido(d.cpf_rep)) throw new ErroApi(422, 'CPF do representante inválido');
+    if (!emailValido(d.email)) throw new ErroApi(422, 'E-mail inválido');
 
     const contrato = {
       id: uid(),
       numero: `CT-${id.replace(/^PRJ-/, '')}`,
       proposta_id: id,
-      clausulas: clausulas(d, p),
+      clausulas: clausulas(d, propostaPublica(p)),
       pdf_url: `/api/contratos/${id}/pdf`,
       whatsapp_url: 'https://wa.me/5500000000000',
       assinado_em: null,

@@ -6,13 +6,13 @@
   // Worker só de assets: não há `main` nem `binding`, porque não existe código
   // de Worker nenhum — a API desta build roda no navegador (ver src/lib/api-demo.js).
   //
-  // `single-page-application` é obrigatório aqui: o adapter-static emite um
-  // único index.html e o roteamento acontece no cliente. Sem isto, abrir
-  // /admin ou /proposta direto na barra de endereços devolveria 404 — só a
-  // home funcionaria. Com isto, o Workers devolve o index.html com 200 e o
-  // roteador do SvelteKit assume, preservando a URL digitada.
+  // Toda rota agora é pré-renderizada: cada página existe como HTML próprio
+  // no `build`, nos dois idiomas. Por isso o modo passa a ser `404-page` — o
+  // Workers serve o arquivo pedido e, quando ele não existe, devolve o
+  // `404.html` com status 404. O modo de SPA devolveria 200 para qualquer
+  // endereço inventado, o que ensina o Google a indexar URL que não existe.
   "assets": {
     "directory": "./build",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "404-page"
   }
 }

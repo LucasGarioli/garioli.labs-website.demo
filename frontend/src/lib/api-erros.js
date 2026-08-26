@@ -17,7 +17,9 @@ export class ErroApi extends Error {
  *  mas isto não é seu" — mandar para o login ali daria um vaivém sem fim. */
 export function exigeSessao(erro, goto, volta) {
   if (erro instanceof ErroApi && erro.status === 401) {
-    goto(`/entrar?volta=${encodeURIComponent(volta)}`);
+    // O login fica no mesmo idioma da página que exigiu a sessão.
+    const porta = volta.startsWith('/en') ? '/en/entrar' : '/entrar';
+    goto(`${porta}?volta=${encodeURIComponent(volta)}`);
     return true;
   }
   return false;

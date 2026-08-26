@@ -2,6 +2,10 @@
   /* Altura real do cabeçalho grudento, medida em Nav.svelte. O valor aqui é o
      que vale antes da primeira medição e nas páginas sem menu de seções. */
   --altura-chrome: 104px;
+
+  /* Fonte das pranchas técnicas. Anotação de desenho é monoespaçada por
+     convenção — a identidade continua sendo Archivo em todo o resto. */
+  --font-tecnica: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 html { scroll-behavior: smooth; }

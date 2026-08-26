@@ -2,8 +2,150 @@ use crate::models::{Frente, NovaSolicitacao, Opcao, Pergunta, Premissa};
 
 macro_rules! op {
     ($v:expr, $d:expr) => {
-        Opcao { val: $v, desc: $d }
+        Opcao { val: $v, label: $v, desc: $d }
     };
+}
+
+/// Idioma pedido pela página.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Idioma {
+    Pt,
+    En,
+}
+
+impl Idioma {
+    /// Qualquer coisa que não seja inglês cai em português — o site é
+    /// brasileiro e um parâmetro estranho não pode derrubar a triagem.
+    pub fn de(codigo: Option<&str>) -> Self {
+        match codigo {
+            Some("en") => Idioma::En,
+            _ => Idioma::Pt,
+        }
+    }
+}
+
+/// O questionário no idioma pedido. A estrutura é uma só: o inglês é o mesmo
+/// vetor com os textos de tela trocados, o que impede as duas versões de
+/// divergirem em número de perguntas ou em chave de resposta.
+pub fn schema_em(idioma: Idioma) -> Vec<Pergunta> {
+    let base = schema();
+    match idioma {
+        Idioma::Pt => base,
+        Idioma::En => base.into_iter().map(traduz).collect(),
+    }
+}
+
+/// Textos de tela em inglês, por chave de pergunta e por chave de opção.
+fn traduz(mut p: Pergunta) -> Pergunta {
+    if let Some((rail, title, hint)) = pergunta_en(p.key) {
+        p.rail = rail;
+        p.title = title;
+        p.hint = hint;
+    }
+    p.options = p
+        .options
+        .into_iter()
+        .map(|mut o| {
+            if let Some((label, desc)) = opcao_en(o.val) {
+                o.label = label;
+                o.desc = desc;
+            }
+            o
+        })
+        .collect();
+    p
+}
+
+fn pergunta_en(key: &str) -> Option<(&'static str, &'static str, &'static str)> {
+    Some(match key {
+        "tipo" => ("Type of space", "What kind of space is it?",
+            "Pick the closest match. If it sits between two, choose the main use."),
+        "dor" => ("What bothers you", "What bothers you most today?",
+            "Tick everything that happens. You do not need the technical name for it."),
+        "area" => ("Size", "Roughly how big is it?",
+            "A range is enough. If you do not know, pick the last option — we measure it."),
+        "altura" => ("Ceiling height", "And the ceiling height?",
+            "Compare it with what you know: an ordinary house is about 2.5 m."),
+        "lugares" => ("Audience", "How many people does the space hold?",
+            "The typical attendance, not the maximum on the licence."),
+        "existe" => ("What is already there", "What is already installed?",
+            "Tick whatever exists, even if it is old or faulty. Reusing it lowers the investment."),
+        "quer" => ("What to quote", "What would you like quoted?",
+            "You can tick more than one. If you are not sure, tick the last option."),
+        "prazo" => ("Timing", "When do you plan to build?",
+            "This sets the project queue, not the price."),
+        "docs" => ("Documents", "Do you have drawings or measurements?",
+            "Not required. With drawings, the project starts sooner."),
+        "contato" => ("Contact", "Where do we send the answer?",
+            "We use these details only to answer this request."),
+        "revisao" => ("Review", "Check before sending",
+            "Review what you told us. You can change any answer."),
+        _ => return None,
+    })
+}
+
+fn opcao_en(val: &str) -> Option<(&'static str, &'static str)> {
+    Some(match val {
+        // tipo
+        "Igreja ou templo" => ("Church or temple", "Worship, live music, amplified speech"),
+        "Auditório ou teatro" => ("Auditorium or theatre", "Lectures, performances, events"),
+        "Estúdio ou home studio" => ("Studio or home studio", "Recording, mixing, production"),
+        "Sala de aula ou treinamento" => ("Classroom or training room", "In-person or hybrid teaching"),
+        "Comércio ou academia" => ("Retail or gym", "Shop, restaurant, bar, gym"),
+        "Outro uso" => ("Another use", "Describe it later in the contact step"),
+        // dor
+        "Não se entende o que é falado" => ("Speech is hard to understand", "It arrives blurred, mostly at the back"),
+        "O som ecoa muito" => ("The room echoes", "A tail hangs after every word or note"),
+        "Microfonia" => ("Feedback", "That high squeal when the volume goes up"),
+        "Volume alto e cansativo" => ("Loud and tiring", "You have to shout, and everyone leaves with a headache"),
+        "Barulho passa entre ambientes" => ("Noise passes between rooms", "One room hears the other"),
+        "Vizinhos reclamam" => ("Neighbours complain", "The sound leaves the building"),
+        "Ainda não existe nada instalado" => ("Nothing installed yet", "New space or under construction"),
+        // area
+        "Até 50 m²" => ("Up to 50 m²", "An ordinary room"),
+        "50 a 120 m²" => ("50 to 120 m²", "Large room or small hall"),
+        "120 a 300 m²" => ("120 to 300 m²", "Medium hall"),
+        "300 a 600 m²" => ("300 to 600 m²", "Large hall"),
+        "Mais de 600 m²" => ("Over 600 m²", "Sports hall, large temple, warehouse"),
+        "Não sei" => ("I do not know", "We measure it on the site visit"),
+        // altura
+        "Baixo, como uma casa" => ("Low, like a house", "About 2.5 m"),
+        "Médio" => ("Medium", "Between 3 and 4 m"),
+        "Alto" => ("High", "Between 4 and 7 m"),
+        "Muito alto" => ("Very high", "Over 7 m, or double height"),
+        // lugares
+        "Até 30 pessoas" => ("Up to 30 people", ""),
+        "30 a 100 pessoas" => ("30 to 100 people", ""),
+        "100 a 300 pessoas" => ("100 to 300 people", ""),
+        "300 a 800 pessoas" => ("300 to 800 people", ""),
+        "Mais de 800 pessoas" => ("Over 800 people", ""),
+        // existe
+        "Caixas de som" => ("Loudspeakers", ""),
+        "Mesa de som" => ("Mixing desk", "Analogue or digital"),
+        "Microfones" => ("Microphones", "Wired or wireless"),
+        "Projetor ou TV" => ("Projector or TV", ""),
+        "Iluminação de palco" => ("Stage lighting", "Beyond the room's own lamps"),
+        "Tratamento acústico" => ("Acoustic treatment", "Foam, panels, technical curtains"),
+        "Nada disso" => ("None of these", "Space with no equipment"),
+        // quer
+        "Isolamento acústico" => ("Sound isolation", "Keep sound from getting in or out"),
+        "Projeto de sonorização" => ("Sound system design", "Speakers, desk, microphones, signal flow"),
+        "Projeto de iluminação" => ("Lighting design", "Stage and scenic light"),
+        "Projeto de projeção ou vídeo" => ("Projection or video design", "Screens, projectors, cameras, streaming"),
+        "Consultoria de compra" => ("Purchase consulting", "Guidance to buy without mistakes"),
+        "Não sei, quero orientação" => ("I am not sure, I want guidance", "We diagnose it and recommend the route"),
+        // prazo
+        "O quanto antes" => ("As soon as possible", "Works under way or a date already booked"),
+        "Em 1 a 3 meses" => ("In 1 to 3 months", ""),
+        "Em 3 a 6 meses" => ("In 3 to 6 months", ""),
+        "Ainda estudando" => ("Still considering", "I want to understand the investment before deciding"),
+        // docs
+        "Tenho planta em PDF ou DWG" => ("I have drawings in PDF or DWG", ""),
+        "Tenho medidas anotadas" => ("I have measurements written down", "Width, length and height"),
+        "Não tenho nada" => ("I have nothing", "We do the survey"),
+        "Posso medir se me orientarem" => ("I can measure if you guide me", "We send a simple script"),
+        _ => return None,
+    })
 }
 
 /// O questionário à prova de erro. Toda pergunta oferece saída ("Não sei"),
@@ -287,5 +429,43 @@ mod tests {
             let p = s.iter().find(|p| p.key == chave).unwrap();
             assert!(p.options.iter().any(|o| o.val.contains("Não sei")));
         }
+    }
+
+    /// O inglês é tradução de tela, não outro questionário: mesma quantidade
+    /// de perguntas, mesmas chaves e mesmas chaves de resposta. Se isto
+    /// quebrar, uma solicitação em inglês deixa de classificar igual.
+    #[test]
+    fn ingles_preserva_as_chaves() {
+        let pt = schema_em(Idioma::Pt);
+        let en = schema_em(Idioma::En);
+        assert_eq!(pt.len(), en.len());
+        for (a, b) in pt.iter().zip(en.iter()) {
+            assert_eq!(a.key, b.key);
+            assert_eq!(a.multi, b.multi);
+            assert_eq!(a.kind, b.kind);
+            assert_eq!(a.options.len(), b.options.len());
+            for (x, y) in a.options.iter().zip(b.options.iter()) {
+                assert_eq!(x.val, y.val, "a chave de resposta não pode mudar de idioma");
+            }
+        }
+    }
+
+    /// Toda opção e toda pergunta têm tradução: um texto esquecido apareceria
+    /// em português no meio da tela em inglês.
+    #[test]
+    fn nada_fica_sem_traducao() {
+        for p in schema() {
+            assert!(pergunta_en(p.key).is_some(), "pergunta sem tradução: {}", p.key);
+            for o in p.options {
+                assert!(opcao_en(o.val).is_some(), "opção sem tradução: {}", o.val);
+            }
+        }
+    }
+
+    #[test]
+    fn idioma_desconhecido_cai_em_portugues() {
+        assert_eq!(Idioma::de(Some("de")), Idioma::Pt);
+        assert_eq!(Idioma::de(None), Idioma::Pt);
+        assert_eq!(Idioma::de(Some("en")), Idioma::En);
     }
 }

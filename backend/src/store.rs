@@ -162,17 +162,17 @@ impl Store {
                 ItemEscopo {
                     titulo: "Projeto acústico".into(),
                     descricao: "Medição, cálculo de RT60 e projeto de tratamento com reforma do forro.".into(),
-                    valor: "R$ 6.000,00".into(),
+                    centavos: 600_000,
                 },
                 ItemEscopo {
                     titulo: "Projeto de sonorização".into(),
                     descricao: "Dimensionamento de PA, fluxo de sinal e memorial para compra.".into(),
-                    valor: "R$ 3.000,00".into(),
+                    centavos: 300_000,
                 },
                 ItemEscopo {
                     titulo: "Iluminação cênica básica".into(),
                     descricao: "Plano de luz em camadas, circuitos e mapa de canais.".into(),
-                    valor: "R$ 2.500,00".into(),
+                    centavos: 250_000,
                 },
             ],
             premissas: vec![
@@ -182,10 +182,13 @@ impl Store {
                 Premissa { label: "Prazo de entrega".into(), valor: "30 dias úteis após 1ª parcela".into() },
                 Premissa { label: "Revisões incluídas".into(), valor: "2 rodadas".into() },
             ],
-            total: "R$ 10.000,00".into(),
-            condicoes: "Desconto de 10% aplicado. 2 parcelas de R$ 5.175,00 ou R$ 9.832,50 à vista. Valores ainda sujeitos a negociação.".into(),
-            validade: "15 dias a contar do envio".into(),
+            desconto_pct: 10,
+            parcelas: 2,
+            desconto_avista_pct: 5,
+            enviada_em_dias: -1,
+            validade_dias: 15,
             aceita_em: None,
+            forma_pagamento: None,
             observacoes: None,
         };
 
@@ -205,7 +208,7 @@ impl Store {
 /// As cláusulas do contrato padrão, geradas a partir dos dados que o cliente informa.
 /// Espelham o contrato revisado em PDF — a redação vive aqui para que o mesmo texto
 /// sirva a tela e ao documento.
-pub fn clausulas(dados: &DadosContrato, proposta: &Proposta) -> Vec<Clausula> {
+pub fn clausulas(dados: &DadosContrato, proposta: &PropostaPublica) -> Vec<Clausula> {
     vec![
         Clausula {
             titulo: "Cláusula 1ª — Das partes".into(),
@@ -229,7 +232,7 @@ pub fn clausulas(dados: &DadosContrato, proposta: &Proposta) -> Vec<Clausula> {
             titulo: "Cláusula 4ª — Do preço e do pagamento".into(),
             texto: format!(
                 "Pelo objeto, a CONTRATANTE pagará {}. {} O atraso implica correção monetária, juros de 1% ao mês e multa de 2%, nos termos do art. 406 do Código Civil.",
-                proposta.total, proposta.condicoes
+                &proposta.efetivo, &proposta.condicoes
             ),
         },
         Clausula {

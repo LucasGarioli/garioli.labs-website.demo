@@ -1,0 +1,283 @@
+<script>
+  import Seo from '$lib/Seo.svelte';
+  import { api } from '$lib/api.js';
+  import { empresa } from '$lib/identidade.js';
+  import { rota, textos } from '$lib/conteudo/index.js';
+  import { REGRA_CAMPO, campoValido } from '$lib/documento.js';
+
+  let { lang = 'pt' } = $props();
+  const t = $derived(textos(lang).paginas.proposta);
+
+  const ID_PADRAO = 'PRJ-2026-0091';
+
+  let etapa = $state('proposta'); // proposta | dados | contrato | assinado
+  let proposta = $state(null);
+  let contrato = $state(null);
+  let erro = $state('');
+  let observacoes = $state('');
+  let dados = $state({});
+  let duvida = $state('');
+  let resposta = $state('');
+  /// A forma de pagamento é escolhida aqui e vai junto com o aceite: o
+  /// contrato tem de dizer um valor, e um documento que oferece dois é um
+  /// documento que ainda vai ser discutido.
+  let forma = $state('parcelado');
+
+  const CAMPOS_CONTRATO = $derived(t.dados.campos);
+
+  $effect(() => {
+    const id = new URLSearchParams(location.search).get('id') ?? ID_PADRAO;
+    api.proposta(id).then((p) => (proposta = p)).catch((e) => (erro = e.message));
+  });
+
+  async function aceitar() {
+    proposta = await api.aceitarProposta(proposta.id, { observacoes, forma });
+    etapa = 'dados';
+  }
+
+  async function enviarDados() {
+    contrato = await api.dadosContrato(proposta.id, dados);
+    etapa = 'contrato';
+  }
+
+  async function assinar() {
+    contrato = await api.assinarContrato(contrato.id, { provedor: 'gov.br' });
+    etapa = 'assinado';
+  }
+
+  /// Máscara aplicada na digitação: quem preenche um CNPJ vê um CNPJ, e o
+  /// campo não aceita letra.
+  function digitar(c, ev) {
+    const regra = REGRA_CAMPO[c.k];
+    dados[c.k] = regra ? regra.mascara(ev.currentTarget.value) : ev.currentTarget.value;
+  }
+
+  /// O erro só aparece depois que há o que corrigir — campo vazio ainda não é
+  /// campo errado.
+  function erroDe(c) {
+    const v = dados[c.k] ?? '';
+    if (!v.trim() || campoValido(c.k, v)) return '';
+    const regra = REGRA_CAMPO[c.k];
+    return regra ? t.dados.erros[regra.erro] : t.dados.erros.curto;
+  }
+
+  const dadosCompletos = $derived(CAMPOS_CONTRATO.every((c) => campoValido(c.k, dados[c.k])));
+
+  /// A API devolve ISO — é o que o backend Axum grava e o que a trilha de
+  /// auditoria compara. Quem lê a confirmação de um contrato assinado, não.
+  const dataHora = (iso) =>
+    new Date(iso).toLocaleString(lang === 'en' ? 'en-GB' : 'pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  const temErro = $derived(CAMPOS_CONTRATO.some((c) => erroDe(c) !== ''));
+</script>
+
+<Seo {lang} caminho="/proposta" titulo={t.titulo} descricao={t.titulo} indexar={false} />
+
+<div class="rule" style="display:flex;align-items:center;gap:20px;padding:16px 40px;flex-wrap:wrap">
+  <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
+     style="font-size:16px;color:inherit;text-decoration:none">GARIOLI LABS</a>
+  <span style="flex:1"></span>
+  {#each t.etapas as [id, label]}
+    <span style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;font-weight:{etapa === id ? 700 : 500};color:{etapa === id ? 'var(--color-accent-700)' : 'var(--color-neutral-600)'}">{label}</span>
+  {/each}
+</div>
+
+{#if erro}
+  <p style="padding:60px 40px;color:var(--color-accent-700)">{erro}</p>
+{:else if !proposta}
+  <p style="padding:60px 40px;color:var(--color-neutral-700)">{t.carregando}</p>
+{:else}
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:start">
+    <div style="padding:56px 48px 96px;max-width:820px;margin:0 auto">
+      {#if etapa === 'proposta'}
+        <div class="kicker" style="margin-bottom:14px">{t.kicker} · {proposta.id}</div>
+        <h1 class="display" style="font-size:40px;line-height:1.05;margin:0 0 6px">{proposta.instituicao}</h1>
+        <p style="font-size:13.5px;color:var(--color-neutral-700);margin:0 0 4px">
+          {proposta.cidade} · <a href={proposta.maps_url} target="_blank" rel="noreferrer">{t.maps}</a>
+        </p>
+        <!-- Um documento comercial sem data e sem número não é um documento.
+             As duas datas saem do mesmo deslocamento que o painel do dono usa
+             para dizer que esta proposta expira. -->
+        <p style="font-size:13px;color:var(--color-neutral-700);margin:0 0 34px">
+          {t.enviadaEm(proposta.enviada_em)} · {t.valeAte(proposta.expira_em)}
+          <span style="color:{proposta.dias_restantes <= 3 ? 'var(--color-accent-700)' : 'inherit'};font-weight:{proposta.dias_restantes <= 3 ? 700 : 400}"
+            >· {t.restam(proposta.dias_restantes)}</span>
+        </p>
+
+        <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px">{t.escopo}</div>
+        {#each proposta.escopo as e}
+          <div class="row" style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:18px;align-items:baseline;padding:14px 0">
+            <span style="display:flex;flex-direction:column;gap:3px">
+              <span style="font-size:15.5px;font-weight:600">{e.titulo}</span>
+              <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-700)">{e.descricao}</span>
+            </span>
+            <span class="display" style="font-size:15px;font-weight:700;text-align:right">{e.valor}</span>
+          </div>
+        {/each}
+
+        <!-- Subtotal e desconto explícitos: sem eles o leitor tem de somar
+             três linhas de cabeça para saber se os 10% são verdade. -->
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:18px;padding:14px 0 0;border-top:1px solid var(--color-divider);font-size:14px">
+          <span class="label" style="letter-spacing:0.1em">{t.subtotal}</span>
+          <span style="text-align:right">{proposta.subtotal}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:18px;padding:8px 0 0;font-size:14px;color:var(--color-accent-700)">
+          <span class="label" style="letter-spacing:0.1em;color:inherit">{t.desconto(proposta.desconto_pct)}</span>
+          <span style="text-align:right">−{proposta.desconto}</span>
+        </div>
+
+        <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-top:38px">{t.premissas}</div>
+        {#each proposta.premissas as p}
+          <div class="row" style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;padding:12px 0;font-size:14.5px">
+            <span class="label" style="padding-top:2px">{p.label}</span>
+            <span style="line-height:1.5">{p.valor}</span>
+          </div>
+        {/each}
+
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:20px 0;border-bottom:2px solid var(--color-text);margin-top:34px">
+          <span class="label" style="font-weight:700;letter-spacing:0.14em">{t.total}</span>
+          <span class="display" style="font-size:26px">{proposta.total}</span>
+        </div>
+        <div style="margin-top:44px;border:2px solid var(--color-text);padding:28px 30px">
+          <div class="label" style="letter-spacing:0.14em;margin-bottom:14px">{t.pagamento.titulo}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:26px">
+            {#each [['parcelado', t.pagamento.parcelado(proposta.pagamento.parcelas, proposta.pagamento.parcela), t.pagamento.parceladoDet], ['avista', t.pagamento.avista(proposta.pagamento.avista), t.pagamento.avistaDet(proposta.pagamento.desconto_avista_pct)]] as [chave, rotulo, detalhe]}
+              <label style="display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:16px 18px;border:2px solid {forma === chave ? 'var(--color-text)' : 'var(--color-divider)'};background:{forma === chave ? 'var(--color-surface)' : 'transparent'}">
+                <span style="display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600">
+                  <input type="radio" value={chave} bind:group={forma} style="accent-color:var(--color-accent-600);margin:0" />
+                  {rotulo}
+                </span>
+                <span style="font-size:12.5px;line-height:1.5;color:var(--color-neutral-700);padding-left:24px">{detalhe}</span>
+              </label>
+            {/each}
+          </div>
+
+          <div class="label" style="letter-spacing:0.14em;margin-bottom:14px">{t.observacoes}</div>
+          <textarea
+            bind:value={observacoes}
+            rows="4"
+            placeholder={t.observacoesPh}
+            style="width:100%;box-sizing:border-box;font-family:var(--font-body);font-size:14.5px;padding:14px;border:2px solid var(--color-divider);background:var(--color-surface);color:var(--color-text);outline:none"
+          ></textarea>
+          <button class="btn-solid" style="margin-top:18px" type="button" onclick={aceitar}>{t.aceitar}</button>
+          <p style="font-size:12.5px;line-height:1.55;color:var(--color-neutral-700);margin:16px 0 0">
+            {t.notaAceite}
+          </p>
+        </div>
+
+      {:else if etapa === 'dados'}
+        <div class="kicker" style="margin-bottom:14px">{t.dados.kicker}</div>
+        <h1 class="display" style="font-size:36px;line-height:1.05;margin:0 0 12px">{t.dados.titulo}</h1>
+        <p style="font-size:14.5px;line-height:1.65;color:var(--color-neutral-800);margin:0 0 34px;max-width:60ch">
+          {t.dados.sub}
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          {#each CAMPOS_CONTRATO as c}
+            <label style="display:flex;flex-direction:column;gap:7px;grid-column:{c.span}">
+              <span class="label" style="letter-spacing:0.14em">{c.label}</span>
+              <input
+                type="text"
+                value={dados[c.k] ?? ''}
+                oninput={(ev) => digitar(c, ev)}
+                style="font-size:15px;padding:13px 14px;border:2px solid {erroDe(c) ? 'var(--color-accent-600)' : 'var(--color-divider)'};background:var(--color-surface);color:var(--color-text);outline:none;font-family:var(--font-body)"
+              />
+              <!-- O CNPJ que for digitado aqui é o que identifica a parte na
+                   cláusula 1ª. Dizer qual campo está errado, e por quê, custa
+                   uma linha; descobrir depois custa uma cobrança. -->
+              {#if erroDe(c)}
+                <span style="font-size:12px;color:var(--color-accent-700)">{erroDe(c)}</span>
+              {/if}
+            </label>
+          {/each}
+        </div>
+        <div style="display:flex;gap:14px;align-items:center;margin-top:28px;flex-wrap:wrap">
+          <button class="btn-solid" type="button" disabled={!dadosCompletos} onclick={enviarDados}>{t.dados.gerar}</button>
+          <span style="font-size:13px;color:var(--color-neutral-700)">
+            <!-- "Preencha todos os campos" ao lado de um campo preenchido e
+                 marcado em vermelho manda a pessoa procurar o que nao existe. -->
+            {dadosCompletos ? t.dados.pronto : temErro ? t.dados.corrija : t.dados.incompleto}
+          </span>
+        </div>
+        <p style="font-size:12.5px;color:var(--color-neutral-700);margin:18px 0 0">{t.dados.idioma}</p>
+
+      {:else if etapa === 'contrato'}
+        <div class="kicker" style="margin-bottom:14px">{t.contrato.kicker} · {contrato.numero}</div>
+        <h1 class="display" style="font-size:36px;line-height:1.05;margin:0 0 26px">{t.contrato.titulo}</h1>
+        <div style="border:2px solid var(--color-divider);background:var(--color-surface);padding:32px 34px;max-height:520px;overflow:auto">
+          {#each contrato.clausulas as c}
+            <div style="margin-bottom:22px">
+              <div class="label" style="color:var(--color-accent-700);letter-spacing:0.14em;margin-bottom:7px">{c.titulo}</div>
+              <p style="font-size:13.5px;line-height:1.7;margin:0;color:var(--color-neutral-800);text-wrap:pretty">{c.texto}</p>
+            </div>
+          {/each}
+        </div>
+        <div style="display:flex;gap:14px;align-items:center;margin-top:26px;flex-wrap:wrap">
+          <button class="btn-solid" type="button" onclick={assinar}>{t.contrato.assinar}</button>
+          <a class="btn-outline" href={contrato.pdf_url} target="_blank" rel="noreferrer">{t.contrato.pdf}</a>
+          <a class="btn-outline" href={contrato.whatsapp_url} target="_blank" rel="noreferrer">{t.contrato.duvida}</a>
+        </div>
+
+      {:else}
+        <div style="height:8px;background:var(--color-accent-600);width:80px;margin-bottom:30px"></div>
+        <div class="kicker" style="margin-bottom:14px">{t.assinado.kicker}</div>
+        <h1 class="display" style="font-size:40px;line-height:1.05;margin:0 0 18px">{t.assinado.titulo}</h1>
+        <p style="font-size:16px;line-height:1.65;color:var(--color-neutral-800);margin:0 0 30px;max-width:58ch">
+          {t.assinado.texto(contrato.numero, dataHora(contrato.assinado_em), contrato.provedor)}
+        </p>
+        <div style="display:flex;gap:14px;flex-wrap:wrap">
+          <a class="btn-solid" href={rota('/conta', lang)}>{t.assinado.conta}</a>
+          <a class="btn-outline" href={contrato.pdf_url} target="_blank" rel="noreferrer">{t.assinado.via}</a>
+        </div>
+      {/if}
+    </div>
+
+    <div style="position:sticky;top:0;padding:56px 40px 56px 0;display:flex;flex-direction:column;gap:14px">
+      <!-- O escopo e as premissas são o que o engenheiro escreveu para um
+           cliente brasileiro, e continuam em português mesmo com a interface em
+           inglês. Explicar isso é mais honesto do que traduzir um instrumento
+           que será assinado em português. -->
+      {#if t.ajuda.idiomaDoc}
+        <div style="border:2px solid var(--color-divider);padding:20px 22px;font-size:12.5px;line-height:1.6;color:var(--color-neutral-700)">
+          {t.ajuda.idiomaDoc}
+        </div>
+      {/if}
+      <div style="border:2px solid var(--color-text);background:var(--color-surface);padding:24px">
+        <div class="label" style="letter-spacing:0.14em;margin-bottom:12px">{t.ajuda.titulo}</div>
+        <input
+          type="text"
+          bind:value={duvida}
+          placeholder={t.ajuda.ph}
+          style="width:100%;box-sizing:border-box;font-size:14px;padding:12px 13px;border:2px solid var(--color-divider);background:var(--color-bg);color:var(--color-text);outline:none;font-family:var(--font-body)"
+        />
+        <button
+          class="btn-solid"
+          style="margin-top:12px;padding:13px 22px;width:100%"
+          type="button"
+          onclick={() => (resposta = t.ajuda.resposta)}
+        >{t.ajuda.perguntar}</button>
+        {#if resposta}
+          <p style="font-size:13px;line-height:1.6;color:var(--color-neutral-800);margin:14px 0 0">{resposta}</p>
+        {/if}
+        <a
+          href="https://wa.me/{empresa.foneE164.replace('+', '')}"
+          target="_blank"
+          rel="noreferrer"
+          style="display:block;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;margin-top:16px;padding-top:16px;border-top:1px solid var(--color-divider)"
+        >{t.ajuda.engenheiro}</a>
+      </div>
+      <!-- A validade da proposta só existe enquanto ela é proposta. Depois do
+           aceite ela virou contrato, e repetir o prazo ao lado de um contrato
+           assinado é dizer que ele expira. -->
+      {#if etapa === 'proposta'}
+        <div style="border:2px solid var(--color-divider);padding:22px 24px;font-size:12.5px;line-height:1.6;color:var(--color-neutral-700)">
+          {t.ajuda.validade(proposta.expira_em, proposta.dias_restantes)}
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}

@@ -1,26 +1,25 @@
 <script>
   import { page } from '$app/stores';
+  import { IDIOMAS, ancora, caminhoBase, rota, textos } from '$lib/conteudo/index.js';
 
-  let { cta = true } = $props();
+  let { cta = true, lang = 'pt' } = $props();
 
-  // As âncoras são absolutas (/#id) para o menu funcionar também em /conta e
-  // /entrar, onde as seções não existem — ali o link leva para a home.
-  const SECOES = [
-    { id: 'servicos', rotulo: 'Serviços' },
-    { id: 'processo', rotulo: 'Processo' },
-    { id: 'caso', rotulo: 'Caso' },
-    { id: 'software', rotulo: 'Software' },
-    { id: 'ensino', rotulo: 'Ensino' },
-    { id: 'sobre', rotulo: 'Sobre' },
-    { id: 'duvidas', rotulo: 'Dúvidas' },
-    { id: 'contato', rotulo: 'Contato' }
-  ];
+  const t = $derived(textos(lang));
+
+  // As âncoras são absolutas (/#id, /en#id) para o menu funcionar também em
+  // /conta e /entrar, onde as seções não existem — ali o link leva para a home
+  // do idioma em que a pessoa está.
+  const SECOES = $derived(t.nav.secoes);
+
+  // O caminho sem o prefixo de idioma: é ele que o seletor traduz, para trocar
+  // de idioma sem tirar ninguém da página em que está.
+  const base = $derived(caminhoBase($page.url.pathname));
 
   let barra = $state(null);
   let trilho = $state(null);
   let traco = $state(null);
 
-  const naHome = $derived($page.url.pathname === '/');
+  const naHome = $derived(base === '/');
 
   // Marca a seção que está sob o cabeçalho e desliza o traço até ela. Só roda
   // onde as seções existem; nas outras páginas o traço nunca aparece.
@@ -72,16 +71,30 @@
 <div class="chrome" bind:this={barra}>
   <div class="aviso">
     <div class="aviso-interno">
-      <a href="/#software" class="anuncio">
+      <a href={ancora('software', lang)} class="anuncio">
         <span class="ponto" aria-hidden="true"></span>
-        Resonance em desenvolvimento — entre na lista de espera, sem cobrança
+        {t.nav.aviso}
       </a>
-      <a href="/#contato" class="aviso-link">Contato</a>
+      <span class="idiomas" aria-label={t.nav.idiomaRotulo}>
+        {#each IDIOMAS as i, n}
+          {#if n > 0}<span class="risco" aria-hidden="true">/</span>{/if}
+          <a
+            href={rota(base, i.codigo)}
+            class="idioma"
+            class:ativo={i.codigo === lang}
+            hreflang={i.htmlLang}
+            lang={i.htmlLang}
+            title={i.trocarPara}
+            aria-current={i.codigo === lang ? 'true' : undefined}>{i.rotulo}</a
+          >
+        {/each}
+      </span>
+      <a href={ancora('contato', lang)} class="aviso-link">{t.nav.avisoLink}</a>
     </div>
   </div>
 
   <div class="rule barra">
-    <a href="/" class="marca">
+    <a href={rota('/', lang)} class="marca" title={t.nav.inicio}>
       <img src="/assets/garioli-mark.png" alt="" width="32" height="32" />
       <span class="logotipo">
         <span class="nome">Garioli</span>
@@ -89,17 +102,17 @@
       </span>
     </a>
 
-    <nav class="secoes" bind:this={trilho} aria-label="Seções do site">
+    <nav class="secoes" bind:this={trilho} aria-label={t.nav.secoesRotulo}>
       {#each SECOES as s}
-        <a href="/#{s.id}" data-secao={s.id}>{s.rotulo}</a>
+        <a href={ancora(s.id, lang)} data-secao={s.id}>{s.rotulo}</a>
       {/each}
       <span class="traco" aria-hidden="true" bind:this={traco}></span>
     </nav>
 
     <span class="acoes">
-      <a href="/entrar" class="entrar">Entrar</a>
+      <a href={rota('/entrar', lang)} class="entrar">{t.nav.entrar}</a>
       {#if cta}
-        <a href="/orcamento" class="proposta">Solicitar orçamento</a>
+        <a href={rota('/orcamento', lang)} class="proposta">{t.nav.orcamento}</a>
       {/if}
     </span>
   </div>
@@ -142,6 +155,29 @@
     text-decoration: none;
   }
   .aviso-link { color: var(--color-neutral-400); }
+
+  /* — seletor de idioma — */
+  .idiomas {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 0 0 auto;
+  }
+  .idioma {
+    color: var(--color-neutral-500);
+    font-weight: 600;
+    letter-spacing: 0.14em;
+  }
+  .idioma:hover {
+    color: var(--color-neutral-100);
+    text-decoration: none;
+  }
+  .idioma.ativo {
+    color: var(--color-neutral-100);
+    border-bottom: 2px solid var(--color-accent-500);
+    padding-bottom: 1px;
+  }
+  .risco { color: var(--color-neutral-700); }
   .ponto {
     width: 6px;
     height: 6px;

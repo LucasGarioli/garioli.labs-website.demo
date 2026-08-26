@@ -26,7 +26,9 @@ export const api = {
   sair: () => req('POST', '/api/auth/sair'),
   eu: () => req('GET', '/api/auth/eu'),
 
-  triagemSchema: () => req('GET', '/api/triagem/schema'),
+  // O questionário vem traduzido do servidor; as chaves de resposta (`val`)
+  // são as mesmas nos dois idiomas, então a classificação não muda.
+  triagemSchema: (lang = 'pt') => req('GET', `/api/triagem/schema?lang=${lang}`),
   criarSolicitacao: (payload) => req('POST', '/api/solicitacoes', payload),
   listarSolicitacoes: () => req('GET', '/api/solicitacoes'),
   aprovarSolicitacao: (id, ajustes) => req('POST', `/api/solicitacoes/${id}/aprovar`, ajustes ?? {}),
