@@ -23,7 +23,7 @@
     </div>
     <div>
       <div class="label" style="color:var(--color-neutral-500);margin-bottom:10px">Contato</div>
-      <div>{empresa.site}<br />{empresa.fone}<br /><span style="color:var(--color-accent-400)">{empresa.selo}</span></div>
+      <div>{empresa.site}<br />{empresa.fone}{#if empresa.selo}<br /><span style="color:var(--color-accent-400)">{empresa.selo}</span>{/if}</div>
     </div>
   </div>
 </div>

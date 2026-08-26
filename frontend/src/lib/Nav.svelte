@@ -8,7 +8,11 @@
   const SECOES = [
     { id: 'servicos', rotulo: 'Serviços' },
     { id: 'processo', rotulo: 'Processo' },
-    { id: 'produtos', rotulo: 'Produtos' },
+    { id: 'caso', rotulo: 'Caso' },
+    { id: 'software', rotulo: 'Software' },
+    { id: 'ensino', rotulo: 'Ensino' },
+    { id: 'sobre', rotulo: 'Sobre' },
+    { id: 'duvidas', rotulo: 'Dúvidas' },
     { id: 'contato', rotulo: 'Contato' }
   ];
 
@@ -68,7 +72,7 @@
 <div class="chrome" bind:this={barra}>
   <div class="aviso">
     <div class="aviso-interno">
-      <a href="/#produtos" class="anuncio">
+      <a href="/#software" class="anuncio">
         <span class="ponto" aria-hidden="true"></span>
         Resonance em desenvolvimento — entre na lista de espera, sem cobrança
       </a>
@@ -256,6 +260,13 @@
   @keyframes pulsa {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
+  }
+
+  /* Oito seções mais as duas ações não cabem em uma linha entre 1280 e 1400;
+     aperta o menu antes de deixar a barra quebrar em duas alturas. */
+  @media (max-width: 1400px) {
+    .aviso-interno, .barra { padding-left: 28px; padding-right: 28px; }
+    .secoes a { padding-left: 9px; padding-right: 9px; }
   }
 
   @media (max-width: 1080px) {

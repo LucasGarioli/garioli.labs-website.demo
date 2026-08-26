@@ -21,10 +21,11 @@ SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público
 
 > [!IMPORTANT]
 > **Versão de demonstração.** Este repositório existe para mostrar o trabalho.
-> Clientes, valores, prazos, parcelas e números fiscais são **fictícios** —
-> criados para exercitar as telas, não para descrever nenhum cliente real nem a
-> situação de nenhuma empresa. O painel avisa isso na própria interface.
-> A versão que roda o negócio é privada.
+> Clientes, valores, prazos, parcelas, números fiscais e os números do estudo de
+> caso da home são **fictícios** — criados para exercitar as telas, não para
+> descrever nenhum cliente real nem a situação de nenhuma empresa. O painel e a
+> própria home avisam isso na interface, e credenciais de parceria reais ficam
+> de fora. A versão que roda o negócio é privada.
 >
 > A página publicada roda **inteiramente no navegador** — sem servidor, sem
 > banco. Veja [Dois backends, um front](#dois-backends-um-front).
@@ -33,6 +34,7 @@ SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público
 
 - [O problema](#o-problema)
 - [Ver funcionando](#ver-funcionando)
+- [A página pública](#a-página-pública)
 - [Arquitetura](#arquitetura)
   - [Dois backends, um front](#dois-backends-um-front)
   - [Topologia de publicação](#topologia-de-publicação)
@@ -76,6 +78,45 @@ O percurso inteiro está neste repositório e roda na demonstração.
 <td width="50%"><img src="docs/img/admin-impostos.jpg" alt="Planejamento tributário" /><br /><sub><b>Planejamento tributário</b> — MEI × Simples Anexo III × Anexo V, com o Fator R.</sub></td>
 </tr>
 </table>
+
+## A página pública
+
+A home não é uma vitrine de adjetivos: ela é a primeira peça de prova. Oito
+seções, todas ancoradas na barra de navegação com *scroll-spy*, levam o leitor
+do problema ao contrato sem trocar de página.
+
+| Seção | O que ela responde |
+| --- | --- |
+| Hero + números | o que a empresa faz, em uma frase e quatro medidas |
+| Serviços | as seis frentes que podem ser contratadas separadamente |
+| Processo | os cinco passos, da triagem à entrega |
+| **Estudo de caso** | o resultado: cinco números, a ficha da sala e as três verificações normativas que decidiram o projeto |
+| Entrega | o que fica com o cliente — plantas, memorial, diagramas, comissionamento |
+| Software | as ferramentas que nasceram dos projetos, com o estado de cada uma |
+| Ensino | material escrito, exercícios e vídeo, ligados à mesma conta |
+| Sobre + Dúvidas | quem assina, a declaração de independência, a trajetória e o FAQ |
+
+<img src="docs/img/home-caso.jpg" alt="Estudo de caso na home" />
+
+<sub><b>Estudo de caso</b> — a única faixa escura da página, para o número ser a
+coisa que o olho encontra primeiro. Norma citada ao lado de cada verificação
+(ISO 3382-2, SPL a 4 kHz, IEC 60268-16), e a nota final dizendo que os valores
+são ilustrativos.</sub>
+
+Todo o texto vive em [`frontend/src/lib/content.js`](frontend/src/lib/content.js)
+— arrays exportados que as páginas percorrem com `{#each}`. Nenhuma frase está
+escrita dentro de um componente. É o que torna esta versão de demonstração
+possível sem manter duas páginas: o arquivo é o mesmo do repositório privado,
+com **cinco linhas** diferentes.
+
+| Campo | Nesta versão |
+| --- | --- |
+| `empresa.razao`, `empresa.cnpj`, `empresa.fone` | valores neutros de exemplo |
+| `empresa.selo` | vazio — a credencial de parceria é real e não entra aqui; o rodapé simplesmente não a desenha |
+| `caso.nota` | declara que os números do estudo de caso são ilustrativos |
+
+O acordeão de dúvidas é `<details>`/`<summary>` puro: abre sem JavaScript, o
+sinal `+` → `−` é CSS, e a transição respeita `prefers-reduced-motion`.
 
 ## Arquitetura
 
@@ -355,11 +396,11 @@ frontend/
   src/lib/api-http.js         cliente da API Axum — um método por endpoint
   src/lib/api-demo.js         porte da API em JS, roda no navegador (build de portfólio)
   src/lib/api-erros.js        ErroApi e o desvio para /entrar, compartilhados pelos dois
-  src/lib/content.js          textos institucionais (serviços, processo, rodapé)
+  src/lib/content.js          todo o texto da home em arrays (serviços, processo, caso, entregas, software, ensino, sobre, dúvidas, rodapé)
   src/lib/Nav.svelte          barra de navegação com scroll-spy escrito direto no DOM
-  src/lib/Footer.svelte       rodapé com dados da empresa e selo ARS
+  src/lib/Footer.svelte       rodapé com dados da empresa e selo de parceria (omitido quando vazio)
   src/app.html                shell: fontes, ícones da aba, manifest
-  src/routes/+page.svelte             /            site institucional
+  src/routes/+page.svelte             /            site institucional (8 seções ancoradas)
   src/routes/entrar/+page.svelte      /entrar      acesso: entrar, criar conta, recuperar
   src/routes/orcamento/+page.svelte   /orcamento   triagem pública (11 passos)
   src/routes/conta/+page.svelte       /conta       conta única: projetos, cursos, licenças, documentos
@@ -386,6 +427,7 @@ docs/img/                     capturas usadas neste README
 | `backend/src/triagem.rs` | regra de preço com teste garantindo que área maior nunca sai mais barata |
 | `backend/src/store.rs` | trilha append-only e o texto das cláusulas gerado dos dados do cliente |
 | `frontend/src/lib/api.js` | o dispatcher de três linhas que deixa a demonstração existir |
+| `frontend/src/lib/content.js` | a home inteira como dado — quatro linhas separam esta versão da privada |
 | `frontend/src/lib/Nav.svelte` | scroll-spy escrito direto no DOM, fora do caminho reativo |
 | `frontend/src/routes/orcamento/` | triagem de 11 passos que não devolve preço ao cliente |
 
@@ -508,6 +550,9 @@ Nada aqui é surpresa em produção — está listado porque falta mesmo.
 6. **E-mail / WhatsApp** — nenhum envio real acontece.
 7. **Rate limiting** — não há. Antes de expor a API de verdade, `/api/auth/*`
    precisa de limite por IP.
+8. **Layout responsivo** — o desenho é feito para desktop. Só a faixa do estudo
+   de caso e a barra de navegação têm tratamento abaixo de 1080 px; as demais
+   grades ainda são de coluna fixa. Falta uma passada de mobile no site inteiro.
 
 ## Licença
 
