@@ -36,11 +36,32 @@
   const INCLINACAO = 9;
   const L = 1600;
   const A = 900;
-  const topo = $derived(Math.min(100, Math.max(0, pct + INCLINACAO)));
-  const base = $derived(Math.min(100, Math.max(0, pct - INCLINACAO)));
+
+  /// A costura é inclinada, então ela ocupa uma faixa de 2 × INCLINACAO de
+  /// largura — o topo entra em quadro antes da base, e sai depois. Levar o
+  /// controle de 0 a 100 direto no eixo da figura deixaria, nos extremos, uma
+  /// cunha do outro lado sempre visível: no fim do curso o lado revelado
+  /// nunca ficava inteiro. O curso do controle vai, por isso, de −INCLINACAO
+  /// a 100 + INCLINACAO: em 0 a costura já saiu inteira pela esquerda, em 100
+  /// já saiu inteira pela direita.
+  const centro = $derived(-INCLINACAO + (pct / 100) * (100 + 2 * INCLINACAO));
+  const topo = $derived(centro + INCLINACAO);
+  const base = $derived(centro - INCLINACAO);
   const costura = $derived(
-    [`${(pct + INCLINACAO) * (L / 100)} 0`, `${L} 0`, `${L} ${A}`, `${(pct - INCLINACAO) * (L / 100)} ${A}`].join(' ')
+    [`${topo * (L / 100)} 0`, `${L} 0`, `${L} ${A}`, `${base * (L / 100)} ${A}`].join(' ')
   );
+
+  /// Cada rótulo pertence ao seu lado. Com o lado inteiro fora de quadro, o
+  /// rótulo que ficasse aceso estaria nomeando a imagem errada.
+  const opacidade = (v) => Math.min(1, Math.max(0, v / 7));
+  const opAntes = $derived(opacidade(pct));
+  const opDepois = $derived(opacidade(100 - pct));
+
+  /// A pega marca a costura na meia-altura da figura, que é onde ela cruza o
+  /// `centro` — e não o valor bruto do controle, que estaria até nove por
+  /// cento longe da linha vermelha. Nos extremos a costura sai de quadro e a
+  /// pega encosta na borda: dali em diante quem arrasta é a figura inteira.
+  const pega = $derived(Math.min(100, Math.max(0, centro)));
 
   // ————————————————————— a câmera —————————————————————
   /// Sobre o praticável de transmissão: 8,00 m acima do piso da plateia e
@@ -1039,10 +1060,10 @@
       />
     </svg>
 
-    <span class="marca marca-antes">{r.antes}</span>
-    <span class="marca marca-depois">{r.depois}</span>
+    <span class="marca marca-antes" style="opacity:{opAntes}">{r.antes}</span>
+    <span class="marca marca-depois" style="opacity:{opDepois}">{r.depois}</span>
 
-    <div class="pega" style="left:{pct}%">
+    <div class="pega" style="left:{pega}%">
       <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M9 6 L4 12 L9 18 M15 6 L20 12 L15 18" />
