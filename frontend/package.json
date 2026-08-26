@@ -14,7 +14,8 @@
     "@sveltejs/kit": "^2.70.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.0",
     "svelte": "^5.56.10",
-    "vite": "^8.2.2"
+    "vite": "^8.2.2",
+    "wrangler": "^4.126.0"
   },
   "allowScripts": {
     "esbuild@0.21.5": true

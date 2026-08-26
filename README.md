@@ -85,6 +85,29 @@ Testes da regra de precificação:
 cd backend && cargo test
 ```
 
+## Publicar
+
+A build de portfólio é estática, então vai para o Cloudflare Workers como
+Worker só de assets — sem código de Worker, porque não há o que rodar no
+servidor. `frontend/wrangler.jsonc` traz a única configuração que importa:
+
+```jsonc
+"assets": {
+  "directory": "./build",
+  "not_found_handling": "single-page-application"
+}
+```
+
+`single-page-application` não é opcional: o adapter-static emite um único
+`index.html`, e sem essa linha abrir `/admin` direto na barra de endereços
+devolveria 404.
+
+```bash
+cd frontend
+npm run build
+npx wrangler deploy
+```
+
 ## Estrutura
 
 ```
