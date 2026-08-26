@@ -70,8 +70,8 @@
 
 <Seo {lang} caminho="/admin" titulo={t.titulo} descricao={t.titulo} indexar={false} />
 
-<div style="min-height:100vh;display:grid;grid-template-columns:250px minmax(0,1fr)">
-  <div style="background:var(--color-neutral-900);color:var(--color-neutral-100);padding:30px 24px;display:flex;flex-direction:column;gap:28px">
+<div class="painel">
+  <div class="barra">
     <div>
       <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
          style="font-size:16px;color:inherit;text-decoration:none">GARIOLI LABS</a>
@@ -106,7 +106,7 @@
     </div>
   </div>
 
-  <div style="padding:38px 44px 90px;max-width:1180px">
+  <div class="conteudo">
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:8px">
       <div class="kicker">{atual.kicker}</div>
       <div style="font-size:12.5px;color:var(--color-neutral-700)">{new Date().toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</div>
@@ -118,7 +118,7 @@
     {:else if !resumo}
       <p style="color:var(--color-neutral-700)">{t.carregando}</p>
     {:else if view === 'home'}
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);border:2px solid var(--color-text);margin-bottom:34px">
+      <div class="faixa-4">
         {#each resumo.kpis as k}
           <div style="padding:22px 24px;border-right:1px solid var(--color-divider);display:flex;flex-direction:column;gap:6px">
             <span class="label" style="letter-spacing:0.14em;font-size:10px">{k.label}</span>
@@ -129,7 +129,7 @@
       </div>
       <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px">{t.exigeAcao}</div>
       {#each resumo.acoes as a}
-        <div class="row" style="display:grid;grid-template-columns:8px 150px minmax(0,1fr) 130px 120px;gap:18px;align-items:center;padding:15px 0">
+        <div class="row tabela" style="--cols:8px 150px minmax(0,1fr) 130px 120px;gap:18px;align-items:center;padding:15px 0">
           <span style="width:8px;height:8px;background:{a.urgente ? 'var(--color-accent-600)' : 'var(--color-neutral-900)'}"></span>
           <span class="label">{a.tipo}</span>
           <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
@@ -148,7 +148,7 @@
       {/each}
 
     {:else if view === 'pipeline'}
-      <div style="display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:start">
+      <div class="colunas-funil">
         {#each resumo.pipeline as col}
           <div style="display:flex;flex-direction:column;gap:10px">
             <div style="border-top:3px solid var(--color-text);padding-top:9px;display:flex;justify-content:space-between;align-items:baseline">
@@ -173,7 +173,7 @@
       </p>
 
     {:else if view === 'financeiro'}
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);border:2px solid var(--color-text);margin-bottom:34px">
+      <div class="faixa-3">
         {#each resumo.financeiro.kpis as k}
           <div style="padding:22px 24px;border-right:1px solid var(--color-divider);display:flex;flex-direction:column;gap:6px">
             <span class="label" style="letter-spacing:0.14em;font-size:10px">{k.label}</span>
@@ -184,7 +184,7 @@
       </div>
       <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px">{t.parcelas}</div>
       {#each resumo.financeiro.parcelas as p}
-        <div class="row" style="display:grid;grid-template-columns:minmax(0,1fr) 110px 120px 120px 120px;gap:18px;align-items:center;padding:14px 0">
+        <div class="row tabela" style="--cols:minmax(0,1fr) 110px 120px 120px 120px;gap:18px;align-items:center;padding:14px 0">
           <span style="font-size:14.5px">{p.cliente}</span>
           <span style="font-size:13px;color:var(--color-neutral-700)">{p.parcela}</span>
           <span class="display" style="font-size:14px;font-weight:700">{brl(p.valor_centavos / 100)}</span>
@@ -214,7 +214,7 @@
 
         <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px">{t.regimes}</div>
         {#each tributos.regimes as r}
-          <div class="row" style="display:grid;grid-template-columns:minmax(0,260px) 110px 130px minmax(0,1fr);gap:18px;align-items:center;padding:16px 0">
+          <div class="row tabela" style="--cols:minmax(0,260px) 110px 130px minmax(0,1fr);gap:18px;align-items:center;padding:16px 0">
             <span style="display:flex;align-items:center;gap:9px">
               <span style="font-size:14.5px;font-weight:{r.recomendado ? 700 : 500}">{r.nome}</span>
               {#if r.recomendado}
@@ -243,7 +243,7 @@
             <span class="display" style="font-size:19px;font-weight:700;letter-spacing:-0.02em">{p.titulo}</span>
             <span style="font-size:12.5px;color:var(--color-neutral-700)">{p.prazo}</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+          <div class="cartoes-4">
             {#each p.frentes as f}
               <div style="display:flex;flex-direction:column;gap:7px">
                 <span style="font-size:11.5px;font-weight:600">{f.titulo}</span>
@@ -265,7 +265,7 @@
       {/each}
 
     {:else if view === 'conteudo'}
-      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px">
+      <div class="cartoes-3">
         {#each resumo.produtos as p}
           <div style="border:2px solid var(--color-divider);background:var(--color-surface);padding:22px 24px;display:flex;flex-direction:column;gap:9px">
             <span class="label" style="color:var(--color-accent-700);letter-spacing:0.14em;font-size:10px">{p.tipo}</span>
@@ -288,7 +288,7 @@
     {:else if view === 'documentos'}
       <div style="border-top:2px solid var(--color-text)">
         {#each resumo.modelos as m}
-          <div class="row" style="display:grid;grid-template-columns:minmax(0,1fr) 90px 130px 190px;gap:18px;align-items:center;padding:16px 0">
+          <div class="row tabela" style="--cols:minmax(0,1fr) 90px 130px 190px;gap:18px;align-items:center;padding:16px 0">
             <span style="display:flex;flex-direction:column;gap:3px">
               <span style="font-size:14.5px;font-weight:600">{m.titulo}</span>
               <span style="font-size:12.5px;color:var(--color-neutral-700)">{m.descricao}</span>
@@ -306,7 +306,7 @@
     {:else}
       <div style="border-top:2px solid var(--color-text)">
         {#each logs as l}
-          <div class="row" style="display:grid;grid-template-columns:150px 130px minmax(0,1fr) 130px;gap:18px;align-items:baseline;padding:13px 0;font-size:13.5px">
+          <div class="row tabela" style="--cols:150px 130px minmax(0,1fr) 130px;gap:18px;align-items:baseline;padding:13px 0;font-size:13.5px">
             <span style="color:var(--color-neutral-700);font-size:12.5px">{l.quando}</span>
             <span class="label" style="color:{l.critico ? 'var(--color-accent-700)' : 'var(--color-neutral-700)'};font-weight:700">{l.tipo}</span>
             <span style="line-height:1.45">{l.evento}</span>
@@ -320,3 +320,60 @@
     {/if}
   </div>
 </div>
+
+<style>
+  /* O painel e' ferramenta de trabalho, nao pagina de leitura: em tela estreita
+     a barra vira uma tira de abas que rola na horizontal, os indicadores se
+     reempilham, e cada tabela rola dentro de si mesma em vez de espremer
+     colunas ate' um numero cair por cima do rotulo do lado. */
+  .painel { min-height: 100vh; display: grid; grid-template-columns: 250px minmax(0, 1fr); }
+  .barra {
+    background: var(--color-neutral-900);
+    color: var(--color-neutral-100);
+    padding: 30px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .conteudo { padding: 38px 44px 90px; max-width: 1180px; }
+
+  .faixa-4, .faixa-3 {
+    display: grid;
+    border: 2px solid var(--color-text);
+    margin-bottom: 34px;
+  }
+  .faixa-4 { grid-template-columns: repeat(4, 1fr); }
+  .faixa-3 { grid-template-columns: repeat(3, 1fr); }
+  .colunas-funil {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+  .cartoes-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .cartoes-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+
+  .tabela { display: grid; grid-template-columns: var(--cols); gap: 18px; }
+
+  @media (max-width: 900px) {
+    .painel { grid-template-columns: minmax(0, 1fr); }
+    .barra { padding: 20px 20px 16px; gap: 18px; }
+    .conteudo { padding: 30px 20px 72px; }
+
+    .faixa-4, .faixa-3 { grid-template-columns: repeat(2, 1fr); }
+    .cartoes-4 { grid-template-columns: repeat(2, 1fr); }
+    .cartoes-3 { grid-template-columns: minmax(0, 1fr); }
+
+    /* Uma tabela so' se le com as colunas alinhadas entre as linhas, entao quem
+       rola e' a area inteira — nunca cada linha por sua conta. As faixas de
+       indicador nao tem largura minima, entao continuam se reempilhando. */
+    .conteudo { overflow-x: auto; }
+    .tabela { min-width: 680px; }
+    .colunas-funil { grid-template-columns: repeat(6, 210px); padding-bottom: 8px; }
+  }
+
+  @media (max-width: 520px) {
+    .faixa-4, .faixa-3 { grid-template-columns: minmax(0, 1fr); }
+    .cartoes-4 { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>

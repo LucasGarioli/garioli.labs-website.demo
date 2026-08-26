@@ -169,7 +169,12 @@
       {/each}
       {#each t30.depois as v, i}
         <circle cx={tx(i)} cy={ty(v)} r="3.6" class="ponto-depois" />
-        <text x={tx(i)} y={ty(v) + 22} class="rot-valor" text-anchor="middle">{fmt.dec(v)}</text>
+        <!-- Centralizado, o rotulo da ponta fica metade fora do quadro: "2,05"
+             saia por cima do eixo e da escala. Nas pontas ele encosta para
+             dentro. -->
+        <text x={tx(i)} y={ty(v) + 22} class="rot-valor"
+              text-anchor={i === 0 ? 'start' : i === t30.depois.length - 1 ? 'end' : 'middle'}
+        >{fmt.dec(v)}</text>
       {/each}
 
       <g transform="translate(80, 232)">
@@ -381,6 +386,13 @@
   .nao-atende { font-size: 11px; letter-spacing: 0.1em; font-weight: 700; fill: #ffd166; }
   .rodape { font-size: 10px; fill: var(--color-neutral-600); }
 
+  /* Wipeout: os rotulos dos graficos cruzam a grade e as curvas. */
+  .rot-valor, .rot-alvo, .rot-critico, .rot-escala {
+    paint-order: stroke;
+    stroke: var(--color-text);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
   .rot-escala { font-size: 10.5px; fill: var(--color-neutral-600); }
   .rot-eixo { font-size: 9.5px; letter-spacing: 0.14em; fill: var(--color-neutral-700); }
   .rot-legenda { font-size: 11px; fill: var(--color-neutral-400); }

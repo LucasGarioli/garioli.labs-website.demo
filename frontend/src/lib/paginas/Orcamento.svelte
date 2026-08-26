@@ -74,13 +74,13 @@
 <Seo {lang} caminho="/orcamento" titulo={t.titulo} descricao={t.descricao} />
 
 {#if enviado}
-  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:80px 40px">
+  <div class="recebido">
     <div style="max-width:660px;width:100%">
       <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
            style="display:block;font-size:16px;color:inherit;text-decoration:none;margin-bottom:26px">GARIOLI LABS</a>
       <div style="height:8px;background:var(--color-accent-600);width:80px;margin-bottom:32px"></div>
       <div class="kicker" style="margin-bottom:14px">{t.recebido.kicker}</div>
-      <h1 class="display" style="font-size:42px;line-height:1.05;margin:0 0 18px">{t.recebido.titulo}</h1>
+      <h1 class="display h1-recebido">{t.recebido.titulo}</h1>
       <p style="font-size:16px;line-height:1.65;color:var(--color-neutral-800);margin:0 0 32px;text-wrap:pretty">
         {t.recebido.texto[0]}<strong>{enviado.protocolo}</strong>{t.recebido.texto[1]}
       </p>
@@ -101,22 +101,22 @@
     </div>
   </div>
 {:else if q}
-  <div style="min-height:100vh;display:grid;grid-template-columns:300px minmax(0,1fr)">
-    <div style="background:var(--color-neutral-900);color:var(--color-neutral-100);padding:40px 32px;display:flex;flex-direction:column;gap:36px">
+  <div class="tela">
+    <div class="trilho">
       <div>
         <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
            style="font-size:18px;color:inherit;text-decoration:none">GARIOLI LABS</a>
         <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-neutral-500);margin-top:6px">{t.assinatura}</div>
       </div>
-      <div style="display:flex;flex-direction:column">
+      <div class="passos">
         {#each schema as r, i}
-          <div style="display:flex;gap:12px;align-items:baseline;padding:7px 0;font-size:12.5px;line-height:1.35;color:{i === step ? 'var(--color-neutral-100)' : i < step ? 'var(--color-neutral-400)' : 'var(--color-neutral-600)'}">
+          <div class="passo" style="color:{i === step ? 'var(--color-neutral-100)' : i < step ? 'var(--color-neutral-400)' : 'var(--color-neutral-600)'}">
             <span class="display" style="font-size:10px;font-weight:700;letter-spacing:0.06em;min-width:20px;color:{i === step ? 'var(--color-accent-400)' : 'var(--color-neutral-600)'}">{String(i + 1).padStart(2, '0')}</span>
             <span>{r.rail}</span>
           </div>
         {/each}
       </div>
-      <div style="margin-top:auto;font-size:11px;line-height:1.6;color:var(--color-neutral-500);border-top:1px solid var(--color-neutral-700);padding-top:18px">
+      <div class="nota-trilho">
         {t.notaLateral}
       </div>
     </div>
@@ -126,9 +126,9 @@
         <div style="height:4px;background:var(--color-accent-600);width:{Math.round((step / Math.max(1, total - 1)) * 100)}%"></div>
       </div>
 
-      <div style="flex:1;padding:52px 56px 32px;max-width:760px;margin:0 auto;width:100%;box-sizing:border-box">
+      <div class="painel">
         <div class="kicker" style="margin-bottom:14px">{t.pergunta(step + 1, total)}</div>
-        <h1 class="display" style="font-size:34px;line-height:1.08;letter-spacing:-0.025em;margin:0 0 12px;text-wrap:pretty">{q.title}</h1>
+        <h1 class="display h1-passo">{q.title}</h1>
         <p style="font-size:14.5px;line-height:1.6;color:var(--color-neutral-700);margin:0 0 30px;max-width:56ch;text-wrap:pretty">{q.hint}</p>
 
         {#if !q.kind}
@@ -148,9 +148,9 @@
             {/each}
           </div>
         {:else if q.kind === 'contato'}
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div class="par">
             {#each CAMPOS as c}
-              <label style="display:flex;flex-direction:column;gap:7px;grid-column:{c.span}">
+              <label class="campo" data-largo={c.span === 'span 2'}>
                 <span class="label" style="letter-spacing:0.14em">{c.label}</span>
                 <input
                   type="text"
@@ -175,7 +175,7 @@
         {:else}
           <div style="border:2px solid var(--color-divider);background:var(--color-surface)">
             {#each resumo as r}
-              <div class="row" style="display:grid;grid-template-columns:200px minmax(0,1fr) auto;gap:18px;align-items:baseline;padding:14px 20px">
+              <div class="row linha-resumo">
                 <span class="label">{r.label}</span>
                 <span style="font-size:14.5px;line-height:1.5;font-weight:500">{r.value}</span>
                 <button type="button" onclick={() => (step = r.i)} style="font-family:var(--font-body);font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;background:transparent;border:0;cursor:pointer;color:var(--color-accent-700);padding:0">{t.alterar}</button>
@@ -190,7 +190,7 @@
         {#if erro}<p style="color:var(--color-accent-700);font-size:13.5px;margin-top:18px">{erro}</p>{/if}
       </div>
 
-      <div style="display:flex;align-items:center;gap:20px;padding:20px 56px;border-top:2px solid var(--color-divider);max-width:760px;margin:0 auto;width:100%;box-sizing:border-box">
+      <div class="rodape">
         <button type="button" onclick={() => (step = Math.max(0, step - 1))} style="font-family:var(--font-body);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600;background:transparent;border:0;padding:12px 0;cursor:pointer;color:var(--color-neutral-700);visibility:{step === 0 ? 'hidden' : 'visible'}">{t.voltar}</button>
         <span style="flex:1"></span>
         {#if !respondido}
@@ -205,3 +205,115 @@
 {:else}
   <div style="padding:80px 48px;font-size:14px;color:var(--color-neutral-700)">{t.carregando}</div>
 {/if}
+
+<style>
+  /* A tela era 300 px de trilho mais uma coluna com 56 px de respiro de cada
+     lado: em 390 px isso da largura negativa, e a pagina passava 159 px da
+     janela. Nada disto cabia em media query enquanto era estilo inline. */
+  .tela {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+  .trilho {
+    background: var(--color-neutral-900);
+    color: var(--color-neutral-100);
+    padding: 40px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 36px;
+  }
+  .passos { display: flex; flex-direction: column; }
+  .passo {
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    padding: 7px 0;
+    font-size: 12.5px;
+    line-height: 1.35;
+  }
+  .nota-trilho {
+    margin-top: auto;
+    font-size: 11px;
+    line-height: 1.6;
+    color: var(--color-neutral-500);
+    border-top: 1px solid var(--color-neutral-700);
+    padding-top: 18px;
+  }
+  .painel {
+    flex: 1;
+    padding: 52px 56px 32px;
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .rodape {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 56px;
+    border-top: 2px solid var(--color-divider);
+    max-width: 760px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .h1-passo {
+    font-size: 34px;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    margin: 0 0 12px;
+    text-wrap: pretty;
+  }
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .campo { display: flex; flex-direction: column; gap: 7px; }
+  /* Atributo em vez de style inline: a regra inline venceria a media query e o
+     campo largo continuaria pedindo duas colunas onde so ha uma. */
+  .campo[data-largo='true'] { grid-column: span 2; }
+  .linha-resumo {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: baseline;
+    padding: 14px 20px;
+  }
+  .recebido {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 40px;
+  }
+  .h1-recebido { font-size: 42px; line-height: 1.05; margin: 0 0 18px; }
+
+  @media (max-width: 900px) {
+    /* O trilho deixa de ser coluna e vira cabecalho: as etapas continuam a
+       vista, deitadas, e a pergunta fica com a largura inteira. */
+    .tela { grid-template-columns: minmax(0, 1fr); }
+    .trilho { padding: 20px 24px 16px; gap: 16px; }
+    .passos { flex-direction: row; flex-wrap: wrap; column-gap: 16px; }
+    .passo { padding: 3px 0; font-size: 11.5px; }
+    .nota-trilho { margin-top: 0; }
+    .painel { padding: 38px 24px 26px; }
+    .rodape { padding: 18px 24px; }
+    .h1-passo { font-size: 28px; }
+  }
+
+  @media (max-width: 620px) {
+    .painel { padding: 30px 20px 22px; }
+    .rodape { padding: 16px 20px; gap: 12px; flex-wrap: wrap; }
+    .recebido { padding: 48px 20px; }
+    .h1-passo { font-size: 24px; }
+    .h1-recebido { font-size: 30px; }
+    .par { grid-template-columns: minmax(0, 1fr); }
+    /* Sem a segunda coluna, "span 2" inventava uma e empurrava a pagina. */
+    .campo[data-largo='true'] { grid-column: auto; }
+    /* Rotulo em cima, valor embaixo e "alterar" na ponta da primeira linha:
+       a coluna de 200 px nao existe mais nesta largura. */
+    .linha-resumo { grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; }
+    .linha-resumo > :nth-child(1) { grid-area: 1 / 1; }
+    .linha-resumo > :nth-child(2) { grid-area: 2 / 1; }
+    .linha-resumo > :nth-child(3) { grid-area: 1 / 2; }
+  }
+</style>

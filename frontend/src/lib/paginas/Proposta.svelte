@@ -92,8 +92,8 @@
 {:else if !proposta}
   <p style="padding:60px 40px;color:var(--color-neutral-700)">{t.carregando}</p>
 {:else}
-  <div style="display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:start">
-    <div style="padding:56px 48px 96px;max-width:820px;margin:0 auto">
+  <div class="folha">
+    <div class="corpo">
       {#if etapa === 'proposta'}
         <div class="kicker" style="margin-bottom:14px">{t.kicker} · {proposta.id}</div>
         <h1 class="display" style="font-size:40px;line-height:1.05;margin:0 0 6px">{proposta.instituicao}</h1>
@@ -111,7 +111,7 @@
 
         <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px">{t.escopo}</div>
         {#each proposta.escopo as e}
-          <div class="row" style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:18px;align-items:baseline;padding:14px 0">
+          <div class="row linha-valor" style="align-items:baseline;padding:14px 0">
             <span style="display:flex;flex-direction:column;gap:3px">
               <span style="font-size:15.5px;font-weight:600">{e.titulo}</span>
               <span style="font-size:13px;line-height:1.5;color:var(--color-neutral-700)">{e.descricao}</span>
@@ -122,18 +122,18 @@
 
         <!-- Subtotal e desconto explícitos: sem eles o leitor tem de somar
              três linhas de cabeça para saber se os 10% são verdade. -->
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:18px;padding:14px 0 0;border-top:1px solid var(--color-divider);font-size:14px">
+        <div class="linha-valor" style="padding:14px 0 0;border-top:1px solid var(--color-divider);font-size:14px">
           <span class="label" style="letter-spacing:0.1em">{t.subtotal}</span>
           <span style="text-align:right">{proposta.subtotal}</span>
         </div>
-        <div style="display:grid;grid-template-columns:minmax(0,1fr) 140px;gap:18px;padding:8px 0 0;font-size:14px;color:var(--color-accent-700)">
+        <div class="linha-valor" style="padding:8px 0 0;font-size:14px;color:var(--color-accent-700)">
           <span class="label" style="letter-spacing:0.1em;color:inherit">{t.desconto(proposta.desconto_pct)}</span>
           <span style="text-align:right">−{proposta.desconto}</span>
         </div>
 
         <div class="label" style="letter-spacing:0.14em;border-bottom:2px solid var(--color-text);padding-bottom:8px;margin-top:38px">{t.premissas}</div>
         {#each proposta.premissas as p}
-          <div class="row" style="display:grid;grid-template-columns:220px minmax(0,1fr);gap:18px;padding:12px 0;font-size:14.5px">
+          <div class="row linha-premissa" style="padding:12px 0;font-size:14.5px">
             <span class="label" style="padding-top:2px">{p.label}</span>
             <span style="line-height:1.5">{p.valor}</span>
           </div>
@@ -145,7 +145,7 @@
         </div>
         <div style="margin-top:44px;border:2px solid var(--color-text);padding:28px 30px">
           <div class="label" style="letter-spacing:0.14em;margin-bottom:14px">{t.pagamento.titulo}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:26px">
+          <div class="par" style="gap:12px;margin-bottom:26px">
             {#each [['parcelado', t.pagamento.parcelado(proposta.pagamento.parcelas, proposta.pagamento.parcela), t.pagamento.parceladoDet], ['avista', t.pagamento.avista(proposta.pagamento.avista), t.pagamento.avistaDet(proposta.pagamento.desconto_avista_pct)]] as [chave, rotulo, detalhe]}
               <label style="display:flex;flex-direction:column;gap:5px;cursor:pointer;padding:16px 18px;border:2px solid {forma === chave ? 'var(--color-text)' : 'var(--color-divider)'};background:{forma === chave ? 'var(--color-surface)' : 'transparent'}">
                 <span style="display:flex;align-items:center;gap:9px;font-size:14.5px;font-weight:600">
@@ -176,9 +176,9 @@
         <p style="font-size:14.5px;line-height:1.65;color:var(--color-neutral-800);margin:0 0 34px;max-width:60ch">
           {t.dados.sub}
         </p>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+        <div class="par">
           {#each CAMPOS_CONTRATO as c}
-            <label style="display:flex;flex-direction:column;gap:7px;grid-column:{c.span}">
+            <label class="campo" data-largo={c.span === 'span 2'}>
               <span class="label" style="letter-spacing:0.14em">{c.label}</span>
               <input
                 type="text"
@@ -236,7 +236,7 @@
       {/if}
     </div>
 
-    <div style="position:sticky;top:0;padding:56px 40px 56px 0;display:flex;flex-direction:column;gap:14px">
+    <div class="lateral">
       <!-- O escopo e as premissas são o que o engenheiro escreveu para um
            cliente brasileiro, e continuam em português mesmo com a interface em
            inglês. Explicar isso é mais honesto do que traduzir um instrumento
@@ -281,3 +281,57 @@
     </div>
   </div>
 {/if}
+
+<style>
+  /* A proposta e' documento: em tela larga a coluna de apoio anda ao lado do
+     texto; abaixo de 980 px ela nao cabe, e uma coluna de 380 px fixa passava
+     por cima do escopo. Aqui ela desce e vira rodape do documento. */
+  .folha {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    align-items: start;
+  }
+  .corpo { padding: 56px 48px 96px; max-width: 820px; margin: 0 auto; }
+  .lateral {
+    position: sticky;
+    top: 0;
+    padding: 56px 40px 56px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .linha-valor {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 140px;
+    gap: 18px;
+  }
+  .linha-premissa {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .par { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .campo { display: flex; flex-direction: column; gap: 7px; }
+  /* Atributo em vez de style inline: regra inline venceria a media query e o
+     campo largo continuaria pedindo duas colunas onde só há uma. */
+  .campo[data-largo='true'] { grid-column: span 2; }
+
+  @media (max-width: 980px) {
+    .folha { grid-template-columns: minmax(0, 1fr); }
+    .corpo { padding: 48px 32px 40px; }
+    .lateral { position: static; padding: 0 32px 72px; max-width: 820px; margin: 0 auto; width: 100%; }
+  }
+
+  @media (max-width: 620px) {
+    .corpo { padding: 36px 20px 32px; }
+    .lateral { padding: 0 20px 56px; }
+    /* Preco embaixo do item, nao numa coluna de 140 px que nao existe mais. */
+    .linha-valor { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+    .linha-valor > :last-child { text-align: left; }
+    .linha-premissa { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+    .par { grid-template-columns: minmax(0, 1fr); }
+    /* Sem a segunda coluna, "span 2" inventava uma e empurrava a pagina. */
+    .campo[data-largo='true'] { grid-column: auto; }
+  }
+</style>

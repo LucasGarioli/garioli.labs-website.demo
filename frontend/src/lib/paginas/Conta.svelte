@@ -33,7 +33,7 @@
 
 <Nav cta={false} {lang} />
 
-<div class="rule" style="display:flex;align-items:center;gap:24px;padding:14px 40px;flex-wrap:wrap">
+<div class="rule abas">
   {#each t.abas as aba}
     <button
       type="button"
@@ -55,10 +55,10 @@
 {:else if !conta}
   <p style="padding:60px 40px;color:var(--color-neutral-700)">{t.carregando}</p>
 {:else}
-  <div style="padding:44px 40px 90px;max-width:1100px;margin:0 auto">
+  <div class="conteudo">
     {#if tab === 'projetos'}
       <div class="kicker" style="margin-bottom:12px">{t.secoes.projetos.kicker}</div>
-      <h1 class="display" style="font-size:36px;line-height:1.05;margin:0 0 34px">{t.secoes.projetos.titulo}</h1>
+      <h1 class="display titulo">{t.secoes.projetos.titulo}</h1>
 
       {#each conta.projetos as p}
         <div style="border:2px solid var(--color-text);background:var(--color-surface);padding:28px 30px;margin-bottom:20px">
@@ -67,7 +67,7 @@
             <span style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;padding:5px 11px;background:{p.destaque ? 'var(--color-accent-600)' : 'var(--color-neutral-900)'};color:var(--color-neutral-100)">{p.status}</span>
           </div>
           <div style="font-size:13px;color:var(--color-neutral-700);margin-bottom:22px">{p.meta}</div>
-          <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:6px">
+          <div class="fases">
             {#each t.fases as f, i}
               <div style="display:flex;flex-direction:column;gap:8px">
                 <div style="height:6px;background:{barra(i, p.fase)}"></div>
@@ -89,8 +89,8 @@
 
     {:else if tab === 'cursos'}
       <div class="kicker" style="margin-bottom:12px">{t.secoes.cursos.kicker}</div>
-      <h1 class="display" style="font-size:36px;line-height:1.05;margin:0 0 34px">{t.secoes.cursos.titulo}</h1>
-      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px">
+      <h1 class="display titulo">{t.secoes.cursos.titulo}</h1>
+      <div class="cartoes-2">
         {#each conta.cursos as c}
           <div style="border:2px solid var(--color-divider);background:var(--color-surface);padding:24px 26px;display:flex;flex-direction:column;gap:12px">
             <span class="label" style="color:var(--color-accent-700);letter-spacing:0.12em">{c.tag}</span>
@@ -109,10 +109,10 @@
 
     {:else if tab === 'licencas'}
       <div class="kicker" style="margin-bottom:12px">{t.secoes.licencas.kicker}</div>
-      <h1 class="display" style="font-size:36px;line-height:1.05;margin:0 0 34px">{t.secoes.licencas.titulo}</h1>
+      <h1 class="display titulo">{t.secoes.licencas.titulo}</h1>
       <div style="border-top:2px solid var(--color-text)">
         {#each conta.licencas as l}
-          <div class="row" style="display:grid;grid-template-columns:minmax(0,1fr) 220px 150px 110px;gap:20px;align-items:center;padding:18px 0">
+          <div class="row tabela" style="--cols:minmax(0,1fr) 220px 150px 110px;gap:20px;align-items:center;padding:18px 0">
             <span style="display:flex;flex-direction:column;gap:3px">
               <span style="font-size:15.5px;font-weight:600">{l.titulo}</span>
               <span style="font-size:12.5px;color:var(--color-neutral-700)">{l.descricao}</span>
@@ -126,10 +126,10 @@
 
     {:else}
       <div class="kicker" style="margin-bottom:12px">{t.secoes.docs.kicker}</div>
-      <h1 class="display" style="font-size:36px;line-height:1.05;margin:0 0 34px">{t.secoes.docs.titulo}</h1>
+      <h1 class="display titulo">{t.secoes.docs.titulo}</h1>
       <div style="border-top:2px solid var(--color-text)">
         {#each conta.documentos as d}
-          <div class="row" style="display:grid;grid-template-columns:200px minmax(0,1fr) 130px 100px;gap:20px;align-items:center;padding:16px 0">
+          <div class="row tabela" style="--cols:200px minmax(0,1fr) 130px 100px;gap:20px;align-items:center;padding:16px 0">
             <span class="label">{d.tipo}</span>
             <span style="font-size:14.5px;font-weight:500">{d.titulo}</span>
             <span style="font-size:13px;color:var(--color-neutral-700)">{d.data}</span>
@@ -140,3 +140,78 @@
     {/if}
   </div>
 {/if}
+
+<style>
+  /* A pagina inteira era estilo inline, e regra inline nao aceita media query:
+     as quatro grades de largura fixa viraram classe para poder respirar. */
+  .abas {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 14px 40px;
+    flex-wrap: wrap;
+  }
+  .conteudo {
+    padding: 44px 40px 90px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  .titulo {
+    font-size: 36px;
+    line-height: 1.05;
+    margin: 0 0 34px;
+  }
+  .fases {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 6px;
+  }
+  .cartoes-2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+  .tabela {
+    display: grid;
+    grid-template-columns: var(--cols);
+  }
+
+  @media (max-width: 860px) {
+    .abas {
+      padding: 12px 24px;
+      gap: 18px;
+    }
+    /* Uma tabela so' se le com as colunas alinhadas entre as linhas, entao quem
+       rola e' a area inteira — nunca cada linha por sua conta. */
+    .conteudo {
+      padding: 34px 24px 76px;
+      overflow-x: auto;
+    }
+    .cartoes-2 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .tabela {
+      min-width: 620px;
+    }
+  }
+
+  @media (max-width: 620px) {
+    .abas {
+      padding: 12px 20px;
+      gap: 16px;
+    }
+    .conteudo {
+      padding: 30px 20px 72px;
+    }
+    .titulo {
+      font-size: 28px;
+      margin: 0 0 26px;
+    }
+    /* Seis fases em 390 px dao 50 px de coluna e o nome da fase quebra letra a
+       letra. Duas fileiras de tres cabem inteiras. */
+    .fases {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px 8px;
+    }
+  }
+</style>

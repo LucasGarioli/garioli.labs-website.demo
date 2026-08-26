@@ -424,6 +424,14 @@
                 stroke-dasharray: 7 4; }
 
   text { font-family: var(--font-tecnica); fill: var(--color-neutral-400); }
+
+  /* Wipeout: os rotulos de fileira e de fonte pousam sobre os arcos da plateia. */
+  .rot-peca, .rot-fonte, .rot-fileira, .rot-critico, .rot-cota {
+    paint-order: stroke;
+    stroke: var(--color-text);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
   .titulo-folha { font-size: 17px; font-weight: 600; letter-spacing: 0.22em;
                   fill: var(--color-neutral-200); }
   .rot-area { font-size: 14px; font-weight: 600; letter-spacing: 0.2em;

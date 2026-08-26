@@ -113,12 +113,17 @@
   ]);
 
   /// Níveis marcados no corte, cada um no ponto em que existe.
+  ///
+  /// A escolha do lado não é estética: sobre a plateia e sobre o mezanino o
+  /// piso é uma escada, e a cota escrita ali cai em cima do degrau, da poltrona
+  /// e do raio de visada. Cada uma fica no vão limpo do lado do próprio nível —
+  /// e o wipeout do CSS cobre o que ainda passar perto.
   const niveis = $derived([
     { x: 11, z: palco.nivel, t: `+${fmt.dec(palco.nivel)}`, ancora: 'middle' },
-    { x: xPrimeira + 1.2, z: 0, t: `±${fmt.dec(0)}`, ancora: 'start' },
-    { x: xUltima - 1.0, z: ultimaTerrea.nivel, t: `+${fmt.dec(ultimaTerrea.nivel)}`, ancora: 'end' },
-    { x: xMezFrente + 0.8, z: mezanino.nivelFrente, t: `+${fmt.dec(mezanino.nivelFrente)}`, ancora: 'start' },
-    { x: xMezFundo - 0.6, z: ultimoMez.nivel, t: `+${fmt.dec(ultimoMez.nivel)}`, ancora: 'end' }
+    { x: xPrimeira - 0.4, z: 0, t: `±${fmt.dec(0)}`, ancora: 'end' },
+    { x: xUltima + 1.8, z: ultimaTerrea.nivel, t: `+${fmt.dec(ultimaTerrea.nivel)}`, ancora: 'start' },
+    { x: xMezFrente - 0.3, z: mezanino.nivelFrente, t: `+${fmt.dec(mezanino.nivelFrente)}`, ancora: 'end' },
+    { x: xMezFundo - 1.5, z: ultimoMez.nivel, t: `+${fmt.dec(ultimoMez.nivel)}`, ancora: 'end' }
   ]);
 
   const somaAlfaS = materiais.reduce((a, m) => a + m.alfa * m.area, 0);
@@ -170,14 +175,18 @@
     <rect x={sx(-sala.parede)} y={sz(0)} width={L(sala.profundidade + 2 * sala.parede)}
           height={L(0.5)} fill="url(#ct-solo)" class="parede" />
     <path d={perfilForro} class="forro" />
-    <text x={sx(34)} y={sz(teto(34)) - 12} class="rot-peca" text-anchor="middle">
+    <!-- Começa onde o forro ainda está no alto e corre para a direita, que é
+         para onde ele desce: assim a linha se afasta do texto letra a letra e
+         nunca o atravessa, seja qual for o comprimento do rótulo. Centrado, ele
+         cruzava a inclinação no meio da própria frase. -->
+    <text x={sx(22)} y={sz(teto(22)) - 6} class="rot-peca" text-anchor="start">
       {r.corte.forro(fmt.dec(sala.alturaProscenio), fmt.dec(sala.alturaFundo))}
     </text>
 
     <!-- ————— palco ————— -->
     <rect x={sx(palco.x0)} y={sz(palco.nivel)} width={L(palco.x1 - palco.x0)}
           height={L(palco.nivel)} class="palco" />
-    <text x={sx(10)} y={sz(2.6)} class="rot-area" text-anchor="middle">{r.comum.palco}</text>
+    <text x={sx(10)} y={sz(3.3)} class="rot-area" text-anchor="middle">{r.comum.palco}</text>
     <rect x={sx(palco.x0 + 0.3)} y={sz(palco.nivel + 1.0 + palco.ledAltura)} width={L(0.35)}
           height={L(palco.ledAltura)} class="led" />
     <text x={sx(palco.x0 + 1.2)} y={sz(palco.nivel + 0.6 + palco.ledAltura)} class="rot-led">
@@ -207,7 +216,9 @@
         <path d={poltrona(xDe(f), f.nivel)} />
       {/each}
     </g>
-    <text x={sx(sala.profundidade - 0.5)} y={sz(4.4)} class="rot-peca" text-anchor="end">
+    <!-- Centrado no vao sob o mezanino (3,41 a 7,00): em 4,40 o rotulo passava
+         por cima da cota de nivel do piso da plateia. -->
+    <text x={sx(sala.profundidade - 0.5)} y={sz(5.3)} class="rot-peca" text-anchor="end">
       {r.corte.mezanino(fmt.milhar(lugares.mezanino))}
     </text>
 
@@ -329,7 +340,10 @@
       <text x={L(20) + 34} y="24" class="rot-cota">· {r.comum.esc} {obra.escalaCorte}</text>
     </g>
 
-    <!-- ————— memorial de absorção ————— -->
+    <!-- ————— memorial de absorção —————
+         Deslocado como bloco: o titulo nascia 12 unidades abaixo dos numeros da
+         escala grafica e os dois se liam como uma linha so. -->
+    <g transform="translate(0 20)">
     <text x="48" y="560" class="titulo-bloco">{r.corte.memorial}</text>
     <line x1="48" y1="574" x2="800" y2="574" class="linha-tabela" />
     <text x="48" y="596" class="cabecalho">α</text>
@@ -373,6 +387,7 @@
         {fmt.dec(sala.t30Calculado)} s
       </text>
       <text x="856" y="760" class="rodape">{r.corte.alvo(fmt.dec(sala.t30Alvo))}</text>
+    </g>
     </g>
 
     <!-- ————— carimbo ————— -->
@@ -492,6 +507,16 @@
   .linha-tabela-fina { stroke: var(--color-neutral-800); stroke-width: 1; }
 
   text { font-family: var(--font-tecnica); fill: var(--color-neutral-400); }
+
+  /* Wipeout: a anotacao abre o proprio claro na geometria, como em prancha de
+     verdade. Sem isto, "▽ +7,00" e "▽ +11,40" caem em cima dos degraus da
+     plateia e do raio de visada, e nao se leem. */
+  .rot-nivel, .rot-peca, .rot-led, .rot-fonte, .rot-visada, .rot-critico {
+    paint-order: stroke;
+    stroke: var(--color-text);
+    stroke-width: 3.4px;
+    stroke-linejoin: round;
+  }
   .rot-area { font-size: 15px; font-weight: 600; letter-spacing: 0.2em;
               fill: var(--color-neutral-200); }
   .rot-peca { font-size: 10.5px; letter-spacing: 0.12em; }

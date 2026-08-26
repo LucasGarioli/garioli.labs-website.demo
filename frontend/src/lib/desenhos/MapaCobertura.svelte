@@ -14,6 +14,19 @@
 
   // A simulação é a mesma; a janela do Resonance é que fala o idioma da página.
   const r = $derived(rotulos(lang));
+
+  // A barra de titulo era tres textos em x fixo (24, 146, 294+i*92). Em
+  // portugues "0.9 · pré-lançamento" tem 147 px: entrava por baixo da marca de
+  // um lado e encostava em "Modelo" do outro. Como a fonte tecnica e
+  // monoespacada, a largura de cada rotulo e' conta, nao palpite — e a marca e'
+  // a mesma string nos dois idiomas, entao basta uma medida fixa para ela.
+  const MARCA_FIM = 24 + 139; // "RESONANCE" · Archivo 17px/800 · ls 0.16em
+  const larguraMono = (txt, px, lsEm) => txt.length * px * (0.6 + lsEm);
+  const versaoX = MARCA_FIM + 20;
+  const menuX = $derived(versaoX + larguraMono(r.mapa.versao, 10.5, 0.1) + 32);
+  const menuPasso = $derived(
+    Math.max(...r.mapa.menus.map((m) => larguraMono(m, 12, 0.06))) + 30
+  );
   const fmt = $derived(formatador(lang));
 
   const E = 6.5; // unidades do viewBox por metro
@@ -153,9 +166,9 @@
     <rect x="0" y="0" width="1200" height="812" class="janela" />
     <rect x="0" y="0" width="1200" height="46" class="barra-topo" />
     <text x="24" y="29" class="marca-app">RESONANCE</text>
-    <text x="146" y="29" class="versao">{r.mapa.versao}</text>
+    <text x={versaoX} y="29" class="versao">{r.mapa.versao}</text>
     {#each r.mapa.menus as m, i}
-      <text x={294 + i * 92} y="29" class="menu" class:menu-ativo={m === r.mapa.menuAtivo}>{m}</text>
+      <text x={menuX + i * menuPasso} y="29" class="menu" class:menu-ativo={m === r.mapa.menuAtivo}>{m}</text>
     {/each}
     <text x="1176" y="29" class="arquivo" text-anchor="end">{arquivo}</text>
     <line x1="0" y1="46" x2="1200" y2="46" class="divisor" />
@@ -323,6 +336,15 @@
   .divisor-fino { stroke: #1d2225; stroke-width: 1; }
 
   text { font-family: var(--font-tecnica); fill: #7f8a91; }
+
+  /* Wipeout na cor da tela do aplicativo: os rotulos das caixas ficam por cima
+     do mapa de calor, onde o fundo muda de cor a cada poltrona. */
+  .rot-fonte, .rot-foh, .rot-palco, .rot-escala {
+    paint-order: stroke;
+    stroke: #101315;
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
   .marca-app {
     font-family: var(--font-heading);
     font-size: 17px;

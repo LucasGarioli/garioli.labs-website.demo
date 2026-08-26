@@ -10,6 +10,24 @@
   // Mesma geometria, mesma cota, outra legenda — e a vírgula decimal vira
   // ponto, como sairia numa prancha emitida em inglês.
   const r = $derived(rotulos(lang));
+
+  // A legenda do carimbo tinha x fixo por item (42, 146, 250, 358). "mezanino
+  // acima" tem 91 unidades e terminava em 1199 — passava por cima da moldura,
+  // que fecha em 1176. A fonte tecnica e' monoespacada, entao a fila se monta
+  // da esquerda para a direita somando o que cada item realmente ocupa.
+  const MINI = 10 * (0.6 + 0.05); // avanco do carimbo-mini, por caractere
+  const legenda = $derived(
+    [
+      { marca: 'fila', larguraMarca: 34, texto: r.planta.legenda.poltronas },
+      { marca: 'array', larguraMarca: 8, texto: r.planta.legenda.arranjo },
+      { marca: 'delay', larguraMarca: 10, texto: r.planta.legenda.delay },
+      { marca: 'peitoril', larguraMarca: 34, texto: r.planta.legenda.mezanino }
+    ].reduce((acc, item) => {
+      const x = acc.length ? acc.at(-1).fim + 20 : 0;
+      return [...acc, { ...item, x, textoX: x + item.larguraMarca + 8,
+                        fim: x + item.larguraMarca + 8 + item.texto.length * MINI }];
+    }, [])
+  );
   const fmt = $derived(formatador(lang));
 
   // Largura da sala corre no eixo horizontal da prancha e a profundidade no
@@ -410,14 +428,18 @@
 
       <text x="750" y="998" class="carimbo-chave">{r.carimbo.legenda}</text>
       <g transform="translate(750, 1006)">
-        <line x1="0" y1="7" x2="34" y2="7" class="leg-fila" />
-        <text x="42" y="11" class="carimbo-mini">{r.planta.legenda.poltronas}</text>
-        <rect x="130" y="1" width="8" height="13" class="leg-array" />
-        <text x="146" y="11" class="carimbo-mini">{r.planta.legenda.arranjo}</text>
-        <circle cx="238" cy="7" r="5" class="leg-delay" />
-        <text x="250" y="11" class="carimbo-mini">{r.planta.legenda.delay}</text>
-        <line x1="316" y1="7" x2="350" y2="7" class="leg-peitoril" />
-        <text x="358" y="11" class="carimbo-mini">{r.planta.legenda.mezanino}</text>
+        {#each legenda as l}
+          {#if l.marca === 'fila'}
+            <line x1={l.x} y1="7" x2={l.x + l.larguraMarca} y2="7" class="leg-fila" />
+          {:else if l.marca === 'array'}
+            <rect x={l.x} y="1" width={l.larguraMarca} height="13" class="leg-array" />
+          {:else if l.marca === 'delay'}
+            <circle cx={l.x + l.larguraMarca / 2} cy="7" r="5" class="leg-delay" />
+          {:else}
+            <line x1={l.x} y1="7" x2={l.x + l.larguraMarca} y2="7" class="leg-peitoril" />
+          {/if}
+          <text x={l.textoX} y="11" class="carimbo-mini">{l.texto}</text>
+        {/each}
       </g>
 
       <text x="750" y="1048" class="carimbo-chave">{r.carimbo.escala}</text>
@@ -518,6 +540,16 @@
                      stroke-dasharray: 5 4; }
 
   text { font-family: var(--font-tecnica); fill: var(--color-neutral-400); }
+
+  /* Wipeout: a anotacao abre o proprio claro na geometria. "SUB · 12 cx" caia
+     em cima da barra do subgrave e do eixo C, e as marcas de delay caiam sobre
+     as fileiras. */
+  .rot-peca, .rot-fonte, .rot-projecao, .rot-fila, .rot-critico, .rot-cota-area {
+    paint-order: stroke;
+    stroke: var(--color-text);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
   .rot-eixo { font-size: 13px; font-weight: 600; fill: var(--color-neutral-200);
               text-anchor: middle; }
   .rot-area { font-size: 17px; font-weight: 600; letter-spacing: 0.2em;
