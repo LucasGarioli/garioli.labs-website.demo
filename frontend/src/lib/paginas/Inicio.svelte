@@ -14,6 +14,7 @@
   import FolhaResultados from '$lib/desenhos/FolhaResultados.svelte';
   import ModeloInterativo from '$lib/desenhos/ModeloInterativo.svelte';
   import LegendaTecnica from '$lib/desenhos/LegendaTecnica.svelte';
+  import VisorPrancha from '$lib/desenhos/VisorPrancha.svelte';
   import Footer from '$lib/Footer.svelte';
   import { empresa } from '$lib/identidade.js';
   import { rota, textos } from '$lib/conteudo/index.js';
@@ -24,6 +25,7 @@
   const t = $derived(textos(lang));
   /// O glossário das pranchas mora com os rótulos delas, não com o texto
   /// da página: quem edita a prancha edita o verbete no mesmo arquivo.
+  const rv = $derived(rotulos(lang).visor);
   const g = $derived(rotulos(lang).glossario);
 </script>
 
@@ -151,35 +153,45 @@
     </div>
 
     <div class="bloco-prancha">
-      <PlantaBaixa {lang} />
+      <VisorPrancha nome={rv.nomes.planta} {lang}>
+        <PlantaBaixa {lang} />
+      </VisorPrancha>
       <div class="dentro dentro-caso">
         <LegendaTecnica titulo={g.titulo} termos={g.planta} />
       </div>
     </div>
 
     <div class="bloco-prancha">
-      <CorteLongitudinal {lang} />
+      <VisorPrancha nome={rv.nomes.corte} {lang}>
+        <CorteLongitudinal {lang} />
+      </VisorPrancha>
       <div class="dentro dentro-caso">
         <LegendaTecnica titulo={g.titulo} termos={g.corte} />
       </div>
     </div>
 
     <div class="bloco-prancha">
-      <Axonometria {lang} />
+      <VisorPrancha nome={rv.nomes.axo} {lang}>
+        <Axonometria {lang} />
+      </VisorPrancha>
       <div class="dentro dentro-caso">
         <LegendaTecnica titulo={g.titulo} termos={g.axo} />
       </div>
     </div>
 
     <div class="bloco-prancha">
-      <MapaCobertura {lang} />
+      <VisorPrancha nome={rv.nomes.mapa} {lang}>
+        <MapaCobertura {lang} />
+      </VisorPrancha>
       <div class="dentro dentro-caso">
         <LegendaTecnica titulo={g.titulo} termos={g.mapa} />
       </div>
     </div>
 
     <div class="bloco-prancha">
-      <FolhaResultados {lang} />
+      <VisorPrancha nome={rv.nomes.resultados} {lang}>
+        <FolhaResultados {lang} />
+      </VisorPrancha>
       <div class="dentro dentro-caso">
         <LegendaTecnica titulo={g.titulo} termos={g.resultados} />
       </div>

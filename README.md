@@ -202,6 +202,28 @@ normativas com o critério ao lado do resultado.</sub>
 gabinetes das pranchas, girando no navegador, com cada poltrona pintada pelo
 nível calculado ali mesmo.</sub>
 
+**No telefone, a mesma folha.** Uma prancha de 1.200 unidades reduzida a 390 px
+mostra o desenho e esconde a cota: um rótulo cotado em 10 px vira 3 px. Em vez de
+manter uma segunda versão simplificada — que divergiria da primeira no primeiro
+ajuste —, a folha na página fica como miniatura sob uma tarja de chamada, e o
+toque abre **a mesma folha** em tela cheia, na escala natural: uma unidade do
+desenho por pixel de tela, com zoom em três passos, ajuste à tela e arrasto. Quem
+responde por essa escala é o `viewBox` de cada folha — a planta tem 1.200
+unidades, o visor do mapa tem 642 —, não um número escrito no componente.
+
+A janela do Resonance é o caso à parte. Barra de menu, trilho de ferramentas e
+dois painéis laterais são o que faz a figura parecer software, e em 390 px eles
+comem dois terços da largura. Em retrato sobra o visor, com a moldura fechada
+onde o desenho acaba; árvore do modelo, parâmetros, escala de cor, estatística e
+leitura voltam como HTML abaixo dele — texto que se lê e se copia, e que o visor
+em tela cheia deixa para trás porque texto não se lê em 1.200 px de largura.
+
+<img src="docs/img/home-celular.jpg" alt="A planta baixa no celular, o visor em tela cheia e o mapa de cobertura em retrato" />
+
+<sub><b>390 px</b> — a prancha na página com a chamada, a mesma prancha em tela
+cheia na escala natural, e o mapa de cobertura em retrato, com os painéis da
+janela transformados em texto de página.</sub>
+
 Nenhum número dessas pranchas é digitado: geometria, níveis, T30 e STI saem de
 [`frontend/src/lib/desenhos/projeto.js`](frontend/src/lib/desenhos/projeto.js)
 na hora em que a página é montada, e o texto do estudo de caso importa os mesmos
@@ -846,9 +868,10 @@ Nada aqui é surpresa em produção — está listado porque falta mesmo.
 6. **E-mail / WhatsApp** — nenhum envio real acontece.
 7. **Rate limiting** — não há. Antes de expor a API de verdade, `/api/auth/*`
    precisa de limite por IP.
-8. **Layout responsivo** — o desenho é feito para desktop. Só a faixa do estudo
-   de caso e a barra de navegação têm tratamento abaixo de 1080 px; as demais
-   grades ainda são de coluna fixa. Falta uma passada de mobile no site inteiro.
+8. **Layout responsivo** — a faixa do estudo de caso, as pranchas e a barra de
+   navegação têm tratamento até 390 px; o CSS das demais faixas ainda é
+   desktop-first, com `max-width` em vez de `min-width`, e algumas grades
+   continuam de coluna fixa. Falta a passada de mobile no site inteiro.
 9. **Idiomas** — português e inglês. Um terceiro idioma pede um arquivo em
    `lib/conteudo/`, uma entrada em `IDIOMAS`, um diretório de rotas espelhando os
    existentes e a tabela correspondente em `desenhos/rotulos.js` e em

@@ -62,6 +62,26 @@ const PT = {
     lugares: (p, m, t) => `${p} plateia + ${m} mezanino = ${t}`
   },
 
+  /// Prancha em tela cheia. No telefone a folha inteira cabe na largura, e
+  /// nessa escala um rótulo de 10 px vira 3 px: quem quer ler o desenho abre
+  /// o visor e o percorre na escala natural, como se faz com papel.
+  visor: {
+    ampliar: 'ampliar',
+    dica: 'toque para ler em tela cheia',
+    fechar: 'fechar',
+    ajustar: 'ajustar à tela',
+    aproximar: 'aproximar',
+    afastar: 'afastar',
+    arraste: 'arraste para percorrer a prancha',
+    nomes: {
+      planta: 'AC-01 · planta baixa',
+      corte: 'AC-02 · corte longitudinal A-A',
+      axo: 'AC-03 · axonometria',
+      mapa: 'Mapa de cobertura',
+      resultados: 'AC-04 · resultados'
+    }
+  },
+
   /// Glossário por prancha: o que o termo é, e para que serve avaliá-lo.
   ///
   /// A primeira linha de cada verbete é escrita para quem projeta; a segunda,
@@ -488,6 +508,23 @@ const EN = {
     distancia: (d) => `${d} m — array → farthest seat`,
     peDireito: (a, b, media) => `ceiling ${a} to ${b} m · mean ${media} m`,
     lugares: (p, m, t) => `${p} floor + ${m} balcony = ${t}`
+  },
+
+  visor: {
+    ampliar: 'enlarge',
+    dica: 'tap to read it full screen',
+    fechar: 'close',
+    ajustar: 'fit to screen',
+    aproximar: 'zoom in',
+    afastar: 'zoom out',
+    arraste: 'drag to move around the sheet',
+    nomes: {
+      planta: 'AC-01 · floor plan',
+      corte: 'AC-02 · longitudinal section A-A',
+      axo: 'AC-03 · axonometric',
+      mapa: 'Coverage map',
+      resultados: 'AC-04 · results'
+    }
   },
 
   glossario: {

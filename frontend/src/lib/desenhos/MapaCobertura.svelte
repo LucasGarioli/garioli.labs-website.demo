@@ -81,6 +81,9 @@
     for (let n = FAIXA.ate; n >= FAIXA.de; n--) linhas.push({ n, c: cor(n) });
     return linhas;
   })();
+  // Em pé a régua desce do máximo para o mínimo; deitada, ela corre da
+  // esquerda para a direita, do mínimo para o máximo.
+  const reguaDeitada = [...regua].reverse();
   const alturaRegua = 300;
   const passoRegua = alturaRegua / regua.length;
 
@@ -149,6 +152,15 @@
 
   const ferramentas = ['◧', '◈', '◉', '⊞', '⌁', '◐'];
 
+  /// A janela do Resonance é uma janela de computador: barra de menu, trilho
+  /// de ferramentas e dois painéis laterais em volta do mapa. Em um telefone
+  /// em pé, esse enfeite come dois terços da largura e empurra o mapa — que é
+  /// o assunto — para 300 px. No retrato fica só o visor, e o que os painéis
+  /// diziam volta como texto de página: legível, selecionável, e sem fingir
+  /// que um desktop cabe aqui.
+  let janela = $state(0);
+  const estreito = $derived(janela > 0 && janela < 900);
+
   /// Marcadores das fontes no visor, com rótulo só nos grupos principais.
   const marcadores = caixas.map((c) => ({
     x: sx(c.y),
@@ -173,65 +185,9 @@
   ]);
 </script>
 
-<figure class="prancha">
-  <svg viewBox="0 0 1200 812" role="img"
-       aria-label={r.mapa.aria(fmt.milhar(lugares.total))}>
-    <title>{r.mapa.titulo}</title>
+<svelte:window bind:innerWidth={janela} />
 
-    <!-- ————— janela ————— -->
-    <rect x="0" y="0" width="1200" height="812" class="janela" />
-    <rect x="0" y="0" width="1200" height="46" class="barra-topo" />
-    <text x="24" y="29" class="marca-app">RESONANCE</text>
-    <text x={versaoX} y="29" class="versao">{r.mapa.versao}</text>
-    {#each r.mapa.menus as m, i}
-      <text x={menuX + i * menuPasso} y="29" class="menu" class:menu-ativo={m === r.mapa.menuAtivo}>{m}</text>
-    {/each}
-    <text x="1176" y="29" class="arquivo" text-anchor="end">{arquivo}</text>
-    <line x1="0" y1="46" x2="1200" y2="46" class="divisor" />
-
-    <!-- ————— trilho de ferramentas ————— -->
-    <rect x="0" y="46" width="54" height="738" class="painel" />
-    {#each ferramentas as f, i}
-      <rect x="11" y={62 + i * 42} width="32" height="32" class="ferramenta" class:ferramenta-ativa={i === 2} />
-      <text x="27" y={83 + i * 42} class="icone" text-anchor="middle">{f}</text>
-    {/each}
-
-    <!-- ————— painel do modelo ————— -->
-    <rect x="54" y="46" width="248" height="738" class="painel" />
-    <text x="72" y="76" class="titulo-painel">{r.mapa.modelo}</text>
-    {#each arvore as n, i}
-      <text x={72 + n.nivel * 14} y={104 + i * 21} class="no" class:no-raiz={n.tipo === 'raiz'}
-            class:no-ativo={n.tipo === 'ativo'}>{n.t}</text>
-    {/each}
-    {#each paresFontes as par, i}
-      <text x="100" y={104 + (arvore.length + i) * 21} class="no no-fonte">{par[0]}</text>
-      {#if par[1]}
-        <text x="196" y={104 + (arvore.length + i) * 21} class="no no-fonte">{par[1]}</text>
-      {/if}
-    {/each}
-
-    <line x1="72" y1="374" x2="284" y2="374" class="divisor-fino" />
-    <text x="72" y="400" class="titulo-painel">{r.mapa.parametrosTitulo}</text>
-    {#each parametros as p, i}
-      <text x="72" y={428 + i * 30} class="chave">{p[0]}</text>
-      <text x="284" y={428 + i * 30} class="valor" text-anchor="end">{p[1]}</text>
-      <line x1="72" y1={436 + i * 30} x2="284" y2={436 + i * 30} class="divisor-fino" />
-    {/each}
-
-    <text x="72" y="640" class="titulo-painel">{r.mapa.verificacaoTitulo}</text>
-    <rect x="72" y="652" width="212" height="60" class="caixa-verde" />
-    <text x="86" y="676" class="verde-forte">{r.mapa.sti}</text>
-    <text x="86" y="697" class="verde-fraco">{r.mapa.stiNota(fmt.dec(sti.ultima, 2))}</text>
-    <rect x="72" y="722" width="212" height="46" class="caixa-neutra" />
-    <text x="86" y="742" class="chave">{r.mapa.t30}</text>
-    <text x="270" y="742" class="valor" text-anchor="end">{fmt.dec(sala.t30Calculado, 2)} s</text>
-    <text x="86" y="760" class="rodape-caixa">{r.mapa.t30Nota(fmt.dec(sala.t30Alvo, 2))}</text>
-
-    <!-- ————— visor ————— -->
-    <rect x="302" y="46" width="640" height="738" class="visor" />
-    <text x="322" y="74" class="titulo-visor">{r.mapa.cobertura}</text>
-    <text x="922" y="74" class="titulo-visor-fraco" text-anchor="end">{r.mapa.plantaNivel}</text>
-
+{#snippet campo()}
     <!-- sala -->
     <rect x={sx(0)} y={sy(0)} width={L(sala.largura)} height={L(sala.profundidade)}
           class="contorno-sala" />
@@ -284,49 +240,211 @@
     <line x1={sx(24)} y1={sy(sala.profundidade) + 21} x2={sx(24)} y2={sy(sala.profundidade) + 31}
           class="escala" />
     <text x={sx(26)} y={sy(sala.profundidade) + 30} class="rot-escala">{r.mapa.metros(20)}</text>
+{/snippet}
 
-    <!-- ————— painel de resultado ————— -->
-    <rect x="942" y="46" width="258" height="738" class="painel" />
-    <text x="962" y="76" class="titulo-painel">{r.mapa.nivel}</text>
+<figure class="prancha">
+  {#if estreito}
+    <!-- ————— retrato ————— -->
+    <div class="retrato">
+      <div class="tarja" data-fora-do-visor>
+        <span class="marca-cel">RESONANCE</span>
+        <span class="versao-cel">{r.mapa.versao}</span>
+        <span class="arquivo-cel">{arquivo}</span>
+      </div>
 
-    {#each regua as faixa, i}
-      <rect x="962" y={92 + i * passoRegua} width="34" height={passoRegua + 0.6} fill={faixa.c} />
-    {/each}
-    <rect x="962" y="92" width="34" height={alturaRegua} class="borda-regua" />
-    {#each regua as faixa, i}
-      {#if faixa.n % 2 === 0}
-        <text x="1004" y={96 + i * passoRegua + passoRegua / 2} class="tick">{faixa.n}</text>
-      {/if}
-    {/each}
+      <!-- O visor da janela tem 738 unidades de altura porque os painéis
+           laterais têm; o desenho acaba em 582, logo abaixo da escala
+           gráfica. Sem os painéis, aquele vazio é só tela desperdiçada num
+           aparelho que tem pouca. -->
+      <svg viewBox="301 45 642 558" role="img"
+           aria-label={r.mapa.aria(fmt.milhar(lugares.total))}>
+        <title>{r.mapa.titulo}</title>
+        <rect x="302" y="46" width="640" height="556" class="visor" />
+        <text x="322" y="74" class="titulo-visor">{r.mapa.cobertura}</text>
+        <text x="922" y="74" class="titulo-visor-fraco" text-anchor="end">{r.mapa.plantaNivel}</text>
+        {@render campo()}
+      </svg>
 
-    <line x1="962" y1="424" x2="1180" y2="424" class="divisor-fino" />
-    <text x="962" y="450" class="titulo-painel">{r.mapa.estatistica}</text>
-    {#each estatisticas as e, i}
-      <text x="962" y={478 + i * 30} class="chave">{e[0]}</text>
-      <text x="1180" y={478 + i * 30} class="valor" text-anchor="end">{e[1]}</text>
-      <line x1="962" y1={486 + i * 30} x2="1180" y2={486 + i * 30} class="divisor-fino" />
-    {/each}
+      <!-- O que era painel da janela. Em tela cheia o visor mostra a folha,
+           e estes blocos ficam onde se lê texto: na página. -->
+      <div class="painel-cel" data-fora-do-visor>
+      <section class="bloco">
+        <h4>{r.mapa.nivel}</h4>
+        <div class="rampa">
+          {#each reguaDeitada as faixa}
+            <span style="background:{faixa.c}"></span>
+          {/each}
+        </div>
+        <div class="rampa-cotas">
+          <span>{FAIXA.de}</span>
+          <span>{FAIXA.ate}</span>
+        </div>
+      </section>
 
-    <rect x="962" y="672" width="218" height="96" class="caixa-neutra" />
-    <text x="978" y="698" class="chave">{r.mapa.leituraTitulo}</text>
-    {#each leitura as linha, i}
-      <text x="978" y={722 + i * 18} class="leitura">{linha}</text>
-    {/each}
+      <section class="bloco">
+        <h4>{r.mapa.estatistica}</h4>
+        <dl class="dados">
+          {#each estatisticas as e}
+            <dt>{e[0]}</dt>
+            <dd>{e[1]}</dd>
+          {/each}
+        </dl>
+      </section>
 
-    <!-- ————— barra de estado ————— -->
-    <line x1="0" y1="784" x2="1200" y2="784" class="divisor" />
-    <text x="24" y="803" class="estado">
-      {r.mapa.contagem(fmt.milhar(assentos.length), caixas.length, celulas.length)}
-    </text>
-    <text x="600" y="803" class="estado" text-anchor="middle">
-      {r.mapa.envoltoriaLinha(
-        fmt.milhar(sala.volume),
-        fmt.milhar(sala.superficies),
-        fmt.dec(sala.alfaMedio, 3)
-      )}
-    </text>
-    <text x="1176" y="803" class="estado" text-anchor="end">{r.unidades}</text>
-  </svg>
+      <section class="bloco">
+        <h4>{r.mapa.leituraTitulo}</h4>
+        <p class="leitura-cel">{leitura.join(' ')}</p>
+      </section>
+
+      <section class="bloco">
+        <h4>{r.mapa.parametrosTitulo}</h4>
+        <dl class="dados">
+          {#each parametros as p}
+            <dt>{p[0]}</dt>
+            <dd>{p[1]}</dd>
+          {/each}
+        </dl>
+      </section>
+
+      <section class="bloco">
+        <h4>{r.mapa.modelo}</h4>
+        <ul class="arvore-cel">
+          {#each arvore as n}
+            <li class:raiz={n.tipo === 'raiz'} class:ativo={n.tipo === 'ativo'}
+                style="padding-left:{n.nivel * 14}px">{n.t}</li>
+          {/each}
+        </ul>
+        <ul class="fontes-cel">
+          {#each grupos as g}
+            <li>{g.g} · {g.n}</li>
+          {/each}
+        </ul>
+      </section>
+
+      <section class="bloco">
+        <h4>{r.mapa.verificacaoTitulo}</h4>
+        <p class="verde-cel"><strong>{r.mapa.sti}</strong> {r.mapa.stiNota(fmt.dec(sti.ultima, 2))}</p>
+        <dl class="dados">
+          <dt>{r.mapa.t30}</dt>
+          <dd>{fmt.dec(sala.t30Calculado, 2)} s</dd>
+        </dl>
+        <p class="nota-cel">{r.mapa.t30Nota(fmt.dec(sala.t30Alvo, 2))}</p>
+      </section>
+
+      <p class="estado-cel">
+        {r.mapa.contagem(fmt.milhar(assentos.length), caixas.length, celulas.length)}<br />
+        {r.mapa.envoltoriaLinha(
+          fmt.milhar(sala.volume),
+          fmt.milhar(sala.superficies),
+          fmt.dec(sala.alfaMedio, 3)
+        )} · {r.unidades}
+      </p>
+      </div>
+    </div>
+  {:else}
+    <svg viewBox="0 0 1200 812" role="img"
+         aria-label={r.mapa.aria(fmt.milhar(lugares.total))}>
+      <title>{r.mapa.titulo}</title>
+
+      <!-- ————— janela ————— -->
+      <rect x="0" y="0" width="1200" height="812" class="janela" />
+      <rect x="0" y="0" width="1200" height="46" class="barra-topo" />
+      <text x="24" y="29" class="marca-app">RESONANCE</text>
+      <text x={versaoX} y="29" class="versao">{r.mapa.versao}</text>
+      {#each r.mapa.menus as m, i}
+        <text x={menuX + i * menuPasso} y="29" class="menu" class:menu-ativo={m === r.mapa.menuAtivo}>{m}</text>
+      {/each}
+      <text x="1176" y="29" class="arquivo" text-anchor="end">{arquivo}</text>
+      <line x1="0" y1="46" x2="1200" y2="46" class="divisor" />
+
+      <!-- ————— trilho de ferramentas ————— -->
+      <rect x="0" y="46" width="54" height="738" class="painel" />
+      {#each ferramentas as f, i}
+        <rect x="11" y={62 + i * 42} width="32" height="32" class="ferramenta" class:ferramenta-ativa={i === 2} />
+        <text x="27" y={83 + i * 42} class="icone" text-anchor="middle">{f}</text>
+      {/each}
+
+      <!-- ————— painel do modelo ————— -->
+      <rect x="54" y="46" width="248" height="738" class="painel" />
+      <text x="72" y="76" class="titulo-painel">{r.mapa.modelo}</text>
+      {#each arvore as n, i}
+        <text x={72 + n.nivel * 14} y={104 + i * 21} class="no" class:no-raiz={n.tipo === 'raiz'}
+              class:no-ativo={n.tipo === 'ativo'}>{n.t}</text>
+      {/each}
+      {#each paresFontes as par, i}
+        <text x="100" y={104 + (arvore.length + i) * 21} class="no no-fonte">{par[0]}</text>
+        {#if par[1]}
+          <text x="196" y={104 + (arvore.length + i) * 21} class="no no-fonte">{par[1]}</text>
+        {/if}
+      {/each}
+
+      <line x1="72" y1="374" x2="284" y2="374" class="divisor-fino" />
+      <text x="72" y="400" class="titulo-painel">{r.mapa.parametrosTitulo}</text>
+      {#each parametros as p, i}
+        <text x="72" y={428 + i * 30} class="chave">{p[0]}</text>
+        <text x="284" y={428 + i * 30} class="valor" text-anchor="end">{p[1]}</text>
+        <line x1="72" y1={436 + i * 30} x2="284" y2={436 + i * 30} class="divisor-fino" />
+      {/each}
+
+      <text x="72" y="640" class="titulo-painel">{r.mapa.verificacaoTitulo}</text>
+      <rect x="72" y="652" width="212" height="60" class="caixa-verde" />
+      <text x="86" y="676" class="verde-forte">{r.mapa.sti}</text>
+      <text x="86" y="697" class="verde-fraco">{r.mapa.stiNota(fmt.dec(sti.ultima, 2))}</text>
+      <rect x="72" y="722" width="212" height="46" class="caixa-neutra" />
+      <text x="86" y="742" class="chave">{r.mapa.t30}</text>
+      <text x="270" y="742" class="valor" text-anchor="end">{fmt.dec(sala.t30Calculado, 2)} s</text>
+      <text x="86" y="760" class="rodape-caixa">{r.mapa.t30Nota(fmt.dec(sala.t30Alvo, 2))}</text>
+
+      <!-- ————— visor ————— -->
+      <rect x="302" y="46" width="640" height="738" class="visor" />
+      <text x="322" y="74" class="titulo-visor">{r.mapa.cobertura}</text>
+      <text x="922" y="74" class="titulo-visor-fraco" text-anchor="end">{r.mapa.plantaNivel}</text>
+
+      {@render campo()}
+
+      <!-- ————— painel de resultado ————— -->
+      <rect x="942" y="46" width="258" height="738" class="painel" />
+      <text x="962" y="76" class="titulo-painel">{r.mapa.nivel}</text>
+
+      {#each regua as faixa, i}
+        <rect x="962" y={92 + i * passoRegua} width="34" height={passoRegua + 0.6} fill={faixa.c} />
+      {/each}
+      <rect x="962" y="92" width="34" height={alturaRegua} class="borda-regua" />
+      {#each regua as faixa, i}
+        {#if faixa.n % 2 === 0}
+          <text x="1004" y={96 + i * passoRegua + passoRegua / 2} class="tick">{faixa.n}</text>
+        {/if}
+      {/each}
+
+      <line x1="962" y1="424" x2="1180" y2="424" class="divisor-fino" />
+      <text x="962" y="450" class="titulo-painel">{r.mapa.estatistica}</text>
+      {#each estatisticas as e, i}
+        <text x="962" y={478 + i * 30} class="chave">{e[0]}</text>
+        <text x="1180" y={478 + i * 30} class="valor" text-anchor="end">{e[1]}</text>
+        <line x1="962" y1={486 + i * 30} x2="1180" y2={486 + i * 30} class="divisor-fino" />
+      {/each}
+
+      <rect x="962" y="672" width="218" height="96" class="caixa-neutra" />
+      <text x="978" y="698" class="chave">{r.mapa.leituraTitulo}</text>
+      {#each leitura as linha, i}
+        <text x="978" y={722 + i * 18} class="leitura">{linha}</text>
+      {/each}
+
+      <!-- ————— barra de estado ————— -->
+      <line x1="0" y1="784" x2="1200" y2="784" class="divisor" />
+      <text x="24" y="803" class="estado">
+        {r.mapa.contagem(fmt.milhar(assentos.length), caixas.length, celulas.length)}
+      </text>
+      <text x="600" y="803" class="estado" text-anchor="middle">
+        {r.mapa.envoltoriaLinha(
+          fmt.milhar(sala.volume),
+          fmt.milhar(sala.superficies),
+          fmt.dec(sala.alfaMedio, 3)
+        )}
+      </text>
+      <text x="1176" y="803" class="estado" text-anchor="end">{r.unidades}</text>
+    </svg>
+  {/if}
 
   <figcaption>
     {r.mapa.figcaption(
@@ -424,4 +542,112 @@
   .borda-regua { fill: none; stroke: #2f363b; stroke-width: 1; }
   .tick { font-size: 9.5px; fill: #6b757b; }
   .estado { font-size: 10px; letter-spacing: 0.06em; fill: #59636a; }
+
+  /* ————— retrato: a janela sai, o mapa fica —————
+     Isto não é a janela de um software encolhida: é o que os painéis diziam,
+     dito como a página diz as outras coisas — texto que se lê e se copia. */
+  .retrato { display: flex; flex-direction: column; gap: 24px; }
+  /* O mapa é prancha e encosta nas duas bordas da tela, como as outras. O que
+     virou texto de página volta para a coluna de texto, com o mesmo respiro
+     lateral que a legenda da figura usa. */
+  .retrato > :not(svg) { padding-left: 20px; padding-right: 20px; box-sizing: border-box; }
+  .painel-cel { display: flex; flex-direction: column; gap: 24px; }
+  /* Acima de 760 px a coluna de texto da página abre de 20 para 24 px de
+     respiro; o painel acompanha, senão ele desalinha da legenda logo abaixo. */
+  @media (min-width: 761px) {
+    .retrato > :not(svg) { padding-left: 24px; padding-right: 24px; }
+  }
+
+  .tarja {
+    /* Numa barra de título só há uma linha, e nela o nome do arquivo cabe.
+       Em 390 px não cabe: ele desce para a linha de baixo inteiro, porque
+       nome de arquivo abreviado não diz nada. */
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 3px 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--color-neutral-100);
+    font-family: var(--font-tecnica);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+  .marca-cel { font-weight: 800; letter-spacing: 0.16em; color: var(--color-neutral-100); }
+  .versao-cel { color: var(--color-neutral-600); text-align: right; }
+  .arquivo-cel { grid-column: 1 / -1; color: var(--color-neutral-500); }
+
+  .bloco { display: flex; flex-direction: column; gap: 9px; }
+  .bloco h4 {
+    margin: 0;
+    font-family: var(--font-tecnica);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--color-neutral-500);
+  }
+
+  .rampa { display: flex; height: 18px; border: 1px solid var(--color-neutral-800); }
+  .rampa span { flex: 1 1 0; }
+  .rampa-cotas {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-tecnica);
+    font-size: 11px;
+    color: var(--color-neutral-500);
+  }
+
+  .dados {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin: 0;
+    font-family: var(--font-tecnica);
+    font-size: 12.5px;
+  }
+  .dados dt, .dados dd {
+    margin: 0;
+    padding: 8px 0;
+    border-top: 1px solid var(--color-neutral-800);
+  }
+  .dados dt { color: var(--color-neutral-500); }
+  .dados dd { color: var(--color-neutral-100); font-weight: 700; text-align: right; }
+
+  .leitura-cel, .nota-cel, .verde-cel, .estado-cel {
+    margin: 0;
+    font-family: var(--font-tecnica);
+    line-height: 1.65;
+  }
+  .leitura-cel { font-size: 13px; color: var(--color-neutral-200); }
+  .nota-cel { font-size: 11.5px; color: var(--color-neutral-500); }
+  .verde-cel {
+    font-size: 12px;
+    padding: 10px 12px;
+    border: 1px solid rgba(58, 168, 118, 0.5);
+    background: rgba(58, 168, 118, 0.1);
+    color: #7f9c8f;
+  }
+  .verde-cel strong { display: block; color: #6fd3a3; }
+  .estado-cel {
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    color: var(--color-neutral-600);
+    border-top: 1px solid var(--color-neutral-800);
+    padding-top: 10px;
+  }
+
+  .arvore-cel, .fontes-cel { margin: 0; padding: 0; list-style: none; font-family: var(--font-tecnica); }
+  .arvore-cel { font-size: 12.5px; }
+  .arvore-cel li { padding: 3px 0; color: var(--color-neutral-400); }
+  .arvore-cel li.raiz { color: var(--color-neutral-100); font-weight: 700; }
+  .arvore-cel li.ativo { color: var(--color-accent-400); }
+  /* Onze grupos em coluna dariam meia tela de lista: eles são etiquetas
+     curtas, e etiqueta curta se lê em grade. */
+  .fontes-cel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 14px;
+    margin-top: 4px;
+    padding-left: 14px;
+    font-size: 11.5px;
+    color: var(--color-neutral-600);
+  }
 </style>
