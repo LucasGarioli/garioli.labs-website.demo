@@ -232,7 +232,7 @@ pub fn clausulas(dados: &DadosContrato, proposta: &PropostaPublica) -> Vec<Claus
             titulo: "Cláusula 4ª — Do preço e do pagamento".into(),
             texto: format!(
                 "Pelo objeto, a CONTRATANTE pagará {}. {} O atraso implica correção monetária, juros de 1% ao mês e multa de 2%, nos termos do art. 406 do Código Civil.",
-                &proposta.efetivo, &proposta.condicoes
+                proposta.efetivo, proposta.condicoes
             ),
         },
         Clausula {
