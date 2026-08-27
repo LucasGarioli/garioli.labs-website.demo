@@ -207,7 +207,9 @@
     <!-- ————— palco ————— -->
     <rect x={sx(palco.x0)} y={sz(palco.nivel)} width={L(palco.x1 - palco.x0)}
           height={L(palco.nivel)} class="palco" />
-    <text x={sx(10)} y={sz(3.3)} class="rot-area" text-anchor="middle">{r.comum.palco}</text>
+    <!-- Acima dos retornos: na cota antiga o nome do palco e o rótulo deles
+         ocupavam a mesma linha. -->
+    <text x={sx(9)} y={sz(4.8)} class="rot-area" text-anchor="middle">{r.comum.palco}</text>
     <rect x={sx(palco.x0 + 0.3)} y={sz(palco.nivel + 1.0 + palco.ledAltura)} width={L(0.35)}
           height={L(palco.ledAltura)} class="led" />
     <text x={sx(palco.x0 + 1.2)} y={sz(palco.nivel + 0.6 + palco.ledAltura)} class="rot-led">
@@ -313,8 +315,10 @@
            lado, na cota do próprio anel. -->
       {#each delays as d}
         {@const alto = d.altura > 13}
+        <!-- Na cota do anel, o rótulo cruzava as caixas do próprio anel: elas
+             estão todas na mesma altura, e só a linha de cima está livre. -->
         <text
-          x={sx(d.x) - (alto ? 16 : 0)} y={sz(d.altura) + (alto ? 4 : 20)}
+          x={sx(d.x) - (alto ? 16 : 0)} y={sz(d.altura) + (alto ? -10 : 20)}
           class="rot-fonte" text-anchor={alto ? 'end' : 'middle'}
         >
           {r.comum.delay(d.rotulo, d.caixas, fmt.dec(d.voo), d.atraso)}
@@ -325,7 +329,9 @@
         {r.comum.conjunto('FF', conjunto('FF').caixas, fmt.dec(conjunto('FF').voo))}
       </text>
       <text x={sx(19.8)} y={sz(3.2)} class="rot-fonte">{r.comum.sub(fontes.subs.caixas)}</text>
-      <text x={sx(9.4)} y={sz(3.0)} class="rot-fonte" text-anchor="middle">
+      <!-- Sobre os próprios retornos, e não no meio do palco: ali o rótulo
+           passava por cima da palavra PALCO. -->
+      <text x={sx(13.6)} y={sz(2.8)} class="rot-fonte" text-anchor="middle">
         {r.comum.conjunto('MON', conjunto('MON').caixas, fmt.dec(palco.nivel))}
       </text>
     </g>
