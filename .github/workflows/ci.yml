@@ -56,6 +56,11 @@ jobs:
       - name: Instala
         run: npm ci
 
+      # O segundo fator é a única parte do front que precisa estar certa contra
+      # uma especificação: os vetores da RFC 6238 dizem se está.
+      - name: Testes
+        run: npm run testes
+
       # Build sem VITE_API_BASE: é exatamente a build de portfólio que vai ao ar.
       - name: Build
         run: npm run build

@@ -7,6 +7,7 @@
     "prepare": "svelte-kit sync",
     "dev": "vite dev",
     "build": "vite build",
+    "testes": "node testes/totp.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {

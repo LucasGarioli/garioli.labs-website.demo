@@ -48,6 +48,7 @@ SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público
   - [O gerador de orçamentos](#o-gerador-de-orçamentos)
 - [Decisões de projeto](#decisões-de-projeto)
 - [Segurança](#segurança)
+  - [Entrada por provedor e segundo fator](#entrada-por-provedor-e-segundo-fator)
 - [Estrutura](#estrutura)
 - [Endpoints](#endpoints)
 - [Rodar localmente](#rodar-localmente)
@@ -685,6 +686,44 @@ modelo continua operável por teclado.
 
 O que **não** está resolvido está em [Limites conhecidos](#limites-conhecidos).
 
+### Entrada por provedor e segundo fator
+
+A tela de acesso tem três botões — Google, Apple, Microsoft — e a conta tem
+uma aba de segurança com verificação em dois fatores. Uma das duas coisas é
+de verdade, e o site diz qual:
+
+<img src="docs/img/acesso-2fa.jpg" alt="A tela de acesso com os três provedores e o cadastro do segundo fator na conta" />
+
+<sub><b>Entrar com</b> e <b>segundo fator</b> — os três provedores acima da regra
+que separa os dois caminhos, e o cadastro do segredo TOTP na aba de segurança da
+conta.</sub>
+
+| | Nesta demonstração | O que falta para valer em produção |
+| --- | --- | --- |
+| Entrada por provedor | **simulada** — abre uma conta fictícia por provedor, sem sair da página | fluxo OIDC no Axum: redirecionamento, `state`/PKCE, troca de código por token e o segredo do cliente em variável de ambiente |
+| Segundo fator (TOTP) | **real** — RFC 6238, HMAC-SHA1 sobre passos de 30 s, conferido contra os seis vetores de teste da RFC | guardar o segredo no servidor, cifrado, em vez de `sessionStorage` |
+
+O código de seis dígitos que a demonstração aceita é o mesmo que o Google
+Authenticator, o Aegis ou o 1Password mostram para o segredo emitido na tela:
+`src/lib/totp.js` implementa a truncagem dinâmica da RFC 4226 §5.3 com
+`crypto.subtle`, sem uma linha de dependência. Os códigos de recuperação são
+de uso único — gastá-los é o que impede a folha de papel perdida de servir
+duas vezes.
+
+A janela de conferência aceita um passo para trás e um para a frente:
+relógio de telefone atrasado é a causa mais comum de recusa, e negar um
+código certo é pior do que noventa segundos de tolerância.
+
+Quem decide se a tela desenha isso é o backend, não a página: `api.js`
+exporta `PROVEDORES` e `SEGUNDO_FATOR`, e o cliente HTTP declara os dois
+vazios enquanto as rotas não existirem no Axum — botão que não autentica
+ninguém é pior do que botão nenhum.
+
+Um 401 desta etapa tem dois significados (código errado, desafio expirado) e
+a frase não os separa — a recusa diz "inválido ou expirado". Por isso o
+`ErroApi` carrega um `motivo` estável, e é ele que decide se a pessoa digita
+de novo ou recomeça a entrada.
+
 ## Estrutura
 
 ```
@@ -694,7 +733,9 @@ frontend/
   src/lib/api.js              escolhe o backend: HTTP real ou demonstração
   src/lib/api-http.js         cliente da API Axum — um método por endpoint
   src/lib/api-demo.js         porte da API em JS, roda no navegador (build de portfólio)
-  src/lib/api-erros.js        ErroApi e o desvio para /entrar, compartilhados pelos dois
+  src/lib/api-erros.js        ErroApi (status + motivo estável) e o desvio para /entrar
+  src/lib/totp.js             segundo fator de verdade: RFC 6238 com crypto.subtle, sem dependência
+  src/lib/MarcaProvedor.svelte  as marcas de Google, Apple e Microsoft desenhadas em SVG local
   src/lib/triagem-en.js       questionário em inglês, gerado de backend/src/triagem.rs
   src/lib/documento.js        dígitos verificadores de CPF e CNPJ, máscara e regra por campo
   src/lib/identidade.js       dados cadastrais e `demonstracao` — o único arquivo que difere do repositório privado
@@ -720,6 +761,7 @@ frontend/
   src/routes/sitemap.xml/     sitemap com os dois idiomas declarados um ao outro (vazio nesta versão)
   src/routes/robots.txt/      `Disallow: /` nesta versão; libera no site real
   wrangler.jsonc              publicação como Worker de assets
+  testes/totp.mjs             os vetores do apêndice B da RFC 6238, sem framework de teste
 
 backend/
   src/models.rs    tipos de domínio (serde) + `Proposta::publica`, que deriva preço e datas do escopo
@@ -814,11 +856,12 @@ Para rodar o front **como a demonstração publicada**, basta não definir
 ```bash
 cd backend && cargo test          # regra de preço, saídas da triagem, dígitos de CPF/CNPJ e a conta da proposta
 cd backend && cargo clippy --all-targets -- -D warnings
+cd frontend && npm run testes     # vetores da RFC 6238 para o segundo fator
 cd frontend && npm run build      # build de portfólio, sem VITE_API_BASE
 ```
 
 O pipeline em [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda os
-quatro passos em cada push e cada PR para `main`, e ainda valida a configuração
+cinco passos em cada push e cada PR para `main`, e ainda valida a configuração
 de publicação com `wrangler deploy --dry-run` — para que uma configuração
 quebrada apareça no PR, não no deploy.
 
@@ -872,10 +915,18 @@ Nada aqui é surpresa em produção — está listado porque falta mesmo.
    navegação têm tratamento até 390 px; o CSS das demais faixas ainda é
    desktop-first, com `max-width` em vez de `min-width`, e algumas grades
    continuam de coluna fixa. Falta a passada de mobile no site inteiro.
-9. **Idiomas** — português e inglês. Um terceiro idioma pede um arquivo em
-   `lib/conteudo/`, uma entrada em `IDIOMAS`, um diretório de rotas espelhando os
-   existentes e a tabela correspondente em `desenhos/rotulos.js` e em
-   `backend/src/triagem.rs`.
+9. **Entrada por provedor** — os botões de Google, Apple e Microsoft abrem
+   uma conta fictícia sem falar com provedor nenhum, e a tela diz isso. O
+   fluxo OIDC de verdade (redirecionamento, `state`/PKCE, troca de código
+   por token) ainda não existe no Axum; o segredo do cliente nunca pode
+   viver no navegador.
+10. **Segundo fator no servidor** — o TOTP é real, mas mora no navegador. No
+    Axum faltam as rotas `/api/conta/segundo-fator/*`, o segredo cifrado em
+    repouso e um limite de tentativas por desafio.
+11. **Idiomas** — português e inglês. Um terceiro idioma pede um arquivo em
+    `lib/conteudo/`, uma entrada em `IDIOMAS`, um diretório de rotas espelhando os
+    existentes e a tabela correspondente em `desenhos/rotulos.js` e em
+    `backend/src/triagem.rs`.
 
 ## Licença
 

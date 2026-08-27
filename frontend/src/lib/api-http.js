@@ -20,8 +20,27 @@ async function req(method, path, body) {
   return res.status === 204 ? null : res.json();
 }
 
+/** Provedores de identidade que a API real oferece.
+ *
+ *  Vazio até o fluxo OIDC entrar no Axum. A tela de acesso lê esta lista para
+ *  decidir se desenha os botões — botão que não autentica ninguém é pior do
+ *  que botão nenhum. */
+export const PROVEDORES = [];
+
+/** As rotas abaixo ainda não existem no Axum. Enquanto não existirem, a
+ *  página da conta não desenha a seção — melhor não ter a aba do que ter uma
+ *  aba que responde 404. */
+export const SEGUNDO_FATOR = false;
+
 export const api = {
   entrar: (email, senha) => req('POST', '/api/auth/entrar', { email, senha }),
+  entrarCom: (provedor) => req('POST', `/api/auth/oauth/${provedor}`),
+  concluirSegundoFator: (desafio, codigo) =>
+    req('POST', '/api/auth/segundo-fator', { desafio, codigo }),
+  segundoFator: () => req('GET', '/api/conta/segundo-fator'),
+  iniciarSegundoFator: () => req('POST', '/api/conta/segundo-fator/iniciar'),
+  confirmarSegundoFator: (codigo) => req('POST', '/api/conta/segundo-fator/confirmar', { codigo }),
+  desativarSegundoFator: (codigo) => req('POST', '/api/conta/segundo-fator/desativar', { codigo }),
   criarConta: (nome, email, senha) => req('POST', '/api/auth/criar-conta', { nome, email, senha }),
   sair: () => req('POST', '/api/auth/sair'),
   eu: () => req('GET', '/api/auth/eu'),

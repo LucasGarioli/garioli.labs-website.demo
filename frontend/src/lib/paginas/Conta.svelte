@@ -3,15 +3,121 @@
   import Nav from '$lib/Nav.svelte';
   import Seo from '$lib/Seo.svelte';
   import { goto } from '$app/navigation';
-  import { api, exigeSessao } from '$lib/api.js';
+  import { api, exigeSessao, SEGUNDO_FATOR } from '$lib/api.js';
   import { rota, textos } from '$lib/conteudo/index.js';
 
   let { lang = 'pt' } = $props();
   const t = $derived(textos(lang).paginas.conta);
+  const sg = $derived(t.seguranca);
 
   let tab = $state('projetos');
   let conta = $state(null);
   let erro = $state('');
+
+  // A aba só existe onde o backend responde por ela: uma aba que devolve 404
+  // é pior do que uma aba a menos.
+  const abas = $derived(t.abas.filter((a) => a.id !== 'seguranca' || SEGUNDO_FATOR));
+
+  // --- segundo fator ---
+  // `passo` é o que a tela mostra; se o segundo fator está ativo quem diz é o
+  // backend, não esta página.
+  let fator = $state(null);
+  let passo = $state('resumo');
+  let cadastro = $state(null);
+  let codigosNovos = $state([]);
+  let codigo2fa = $state('');
+  let ocupado = $state(false);
+  let erro2fa = $state('');
+  let copiado = $state(false);
+
+  const pronto2fa = $derived(codigo2fa.replace(/[\s-]/g, '').length >= 6);
+
+  // A data de ativação chega em ISO, que é o que um backend devolve. Quem
+  // escolhe o formato é a página, porque é ela que sabe o idioma.
+  const dia = (iso) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? iso
+      : d.toLocaleDateString(lang === 'en' ? 'en-GB' : 'pt-BR', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric'
+        });
+  };
+
+  async function carregarFator() {
+    try {
+      fator = await api.segundoFator();
+    } catch (e) {
+      erro2fa = e.message;
+    }
+  }
+
+  // Só busca quando a aba é aberta: quem nunca entra nela não paga a chamada.
+  $effect(() => {
+    if (tab === 'seguranca' && SEGUNDO_FATOR && !fator && !erro2fa) carregarFator();
+  });
+
+  async function tentar(acao) {
+    if (ocupado) return;
+    ocupado = true;
+    erro2fa = '';
+    try {
+      await acao();
+    } catch (e) {
+      // Mesma razão da tela de acesso: o backend fala um idioma só, e a recusa
+      // de um código é o erro que mais aparece aqui.
+      erro2fa = e.motivo === 'codigo_invalido' ? sg.recusado : e.message;
+    } finally {
+      ocupado = false;
+    }
+  }
+
+  const iniciar = () =>
+    tentar(async () => {
+      cadastro = await api.iniciarSegundoFator();
+      codigo2fa = '';
+      copiado = false;
+      passo = 'cadastro';
+    });
+
+  const confirmar = () =>
+    tentar(async () => {
+      const { codigos } = await api.confirmarSegundoFator(codigo2fa);
+      codigosNovos = codigos;
+      cadastro = null;
+      codigo2fa = '';
+      passo = 'codigos';
+      await carregarFator();
+    });
+
+  const desativar = () =>
+    tentar(async () => {
+      await api.desativarSegundoFator(codigo2fa);
+      codigo2fa = '';
+      passo = 'resumo';
+      await carregarFator();
+    });
+
+  function cancelar() {
+    cadastro = null;
+    codigosNovos = [];
+    codigo2fa = '';
+    erro2fa = '';
+    passo = 'resumo';
+  }
+
+  // Copiar é conveniência; onde a área de transferência não existe (contexto
+  // não seguro), o segredo continua na tela para ser digitado.
+  async function copiarSegredo() {
+    try {
+      await navigator.clipboard.writeText(cadastro.segredo);
+      copiado = true;
+      setTimeout(() => (copiado = false), 2000);
+    } catch {
+      copiado = false;
+    }
+  }
 
   onMount(() => {
     api
@@ -34,7 +140,7 @@
 <Nav cta={false} {lang} />
 
 <div class="rule abas">
-  {#each t.abas as aba}
+  {#each abas as aba}
     <button
       type="button"
       onclick={() => (tab = aba.id)}
@@ -125,6 +231,93 @@
         {/each}
       </div>
 
+    {:else if tab === 'seguranca'}
+      <div class="kicker" style="margin-bottom:12px">{sg.kicker}</div>
+      <h1 class="display titulo">{sg.titulo}</h1>
+
+      <div class="painel">
+        {#if !fator && !erro2fa}
+          <p class="texto">{t.carregando}</p>
+        {:else if passo === 'codigos'}
+          <h2 class="sub">{sg.codigosTitulo}</h2>
+          <p class="texto">{sg.codigosTexto}</p>
+          <ul class="codigos">
+            {#each codigosNovos as c}
+              <li>{c}</li>
+            {/each}
+          </ul>
+          <button type="button" class="btn-solid compacto" onclick={cancelar}>{sg.codigosOk}</button>
+
+        {:else if passo === 'cadastro' && cadastro}
+          <h2 class="sub">{sg.passo1}</h2>
+          <p class="texto">{sg.passo1Texto}</p>
+          <a class="btn-outline compacto" href={cadastro.uri}>{sg.abrirApp}</a>
+
+          <div class="segredo">
+            <span class="rotulo">{sg.segredoRotulo}</span>
+            <code>{cadastro.formatado}</code>
+            <button type="button" class="link-mini" onclick={copiarSegredo}
+              >{copiado ? sg.copiado : sg.copiar}</button>
+          </div>
+
+          <h2 class="sub">{sg.passo2}</h2>
+          <div class="field">
+            <label for="codigo2fa">{sg.campo}</label>
+            <input
+              id="codigo2fa"
+              class="input codigo"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="7"
+              bind:value={codigo2fa}
+            />
+          </div>
+
+          {#if erro2fa}<p role="alert" class="erro">{erro2fa}</p>{/if}
+
+          <div class="acoes">
+            <button type="button" class="btn-solid compacto" disabled={!pronto2fa || ocupado} onclick={confirmar}
+              >{ocupado ? sg.confirmando : sg.confirmar}</button>
+            <button type="button" class="link-mini" onclick={cancelar}>{sg.cancelar}</button>
+          </div>
+
+        {:else if passo === 'desativar'}
+          <p class="texto">{sg.desativarTexto}</p>
+          <div class="field">
+            <label for="codigo-off">{sg.campo}</label>
+            <input id="codigo-off" class="input codigo" autocomplete="one-time-code" maxlength="9" bind:value={codigo2fa} />
+          </div>
+
+          {#if erro2fa}<p role="alert" class="erro">{erro2fa}</p>{/if}
+
+          <div class="acoes">
+            <button type="button" class="btn-solid compacto" disabled={!pronto2fa || ocupado} onclick={desativar}
+              >{ocupado ? sg.desativando : sg.desativar}</button>
+            <button type="button" class="link-mini" onclick={cancelar}>{sg.cancelar}</button>
+          </div>
+
+        {:else}
+          <span class="selo" data-ativo={Boolean(fator?.ativo)}>{fator?.ativo ? sg.seloAtivo : sg.seloInativo}</span>
+          <p class="texto">{fator?.ativo ? sg.resumoAtivo : sg.resumoInativo}</p>
+
+          {#if fator?.ativo}
+            <p class="meta">{sg.desde(dia(fator.desde))} · {sg.restantes(fator.codigos_restantes)}</p>
+          {/if}
+
+          {#if erro2fa}<p role="alert" class="erro">{erro2fa}</p>{/if}
+
+          {#if fator?.ativo}
+            <button type="button" class="btn-outline compacto" onclick={() => { erro2fa = ''; codigo2fa = ''; passo = 'desativar'; }}
+              >{sg.desativar}</button>
+          {:else}
+            <button type="button" class="btn-solid compacto" disabled={ocupado} onclick={iniciar}
+              >{ocupado ? sg.preparando : sg.ativar}</button>
+          {/if}
+        {/if}
+
+        <p class="nota">{sg.nota}</p>
+      </div>
+
     {:else}
       <div class="kicker" style="margin-bottom:12px">{t.secoes.docs.kicker}</div>
       <h1 class="display titulo">{t.secoes.docs.titulo}</h1>
@@ -167,6 +360,120 @@
      o desenho certo — a aba fica com a altura da tira. */
 @media (pointer: coarse), (max-width: 620px) {
     .aba { padding: 15px 0; }
+  }
+
+  /* — segundo fator —
+     Base e' o telefone: uma coluna, alvos inteiros. O painel nao passa da
+     largura de leitura porque o que ele tem e' texto e um campo. */
+  .painel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    max-width: 56ch;
+    border: 2px solid var(--color-text);
+    background: var(--color-surface);
+    padding: 26px 22px;
+  }
+  .painel .sub {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0;
+  }
+  .painel .texto { margin: 0; font-size: 14.5px; line-height: 1.6; }
+  .painel .meta { margin: 0; font-size: 12.5px; color: var(--color-neutral-700); }
+  .painel .nota {
+    margin: 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-divider);
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: var(--color-neutral-700);
+  }
+  .selo {
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 5px 11px;
+    background: var(--color-neutral-900);
+    color: var(--color-neutral-100);
+  }
+  .selo[data-ativo='true'] { background: var(--color-accent-600); }
+
+  .segredo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 16px;
+    background: var(--color-neutral-200);
+  }
+  .segredo .rotulo {
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-neutral-700);
+  }
+  /* O segredo e' longo e nao tem espaco onde quebrar sozinho: sem isto ele
+     empurra o painel para fora da tela do telefone. */
+  .segredo code {
+    font-family: var(--font-tecnica);
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    word-break: break-all;
+  }
+
+  .codigo {
+    font-family: var(--font-tecnica);
+    font-size: 20px;
+    letter-spacing: 0.3em;
+  }
+  .codigos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+    width: 100%;
+    font-family: var(--font-tecnica);
+    font-size: 14.5px;
+    letter-spacing: 0.06em;
+  }
+  .acoes { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .link-mini {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    color: var(--color-accent-700);
+    text-decoration: underline;
+  }
+  .erro {
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--color-neutral-100);
+    background: var(--color-accent-700);
+    padding: 12px 16px;
+  }
+  @media (min-width: 621px) {
+    .painel { padding: 30px 32px; gap: 20px; }
+  }
+  @media (pointer: coarse), (max-width: 620px) {
+    .link-mini { padding: 15px 8px; margin: -15px -8px; }
   }
 
   .abas {

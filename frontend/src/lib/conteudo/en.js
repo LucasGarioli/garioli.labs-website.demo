@@ -274,6 +274,29 @@ export default {
         }
       },
       abas: { entrar: 'Sign in', criar: 'Create account' },
+      doisFatores: {
+        kicker: 'Verification',
+        titulo: 'Confirm it is you',
+        sub: 'Open your authenticator app and type the six-digit code.',
+        campo: 'Six-digit code',
+        ou: 'Lost the phone? Use a recovery code.',
+        recuperacaoCampo: 'Recovery code',
+        usarRecuperacao: 'use a recovery code',
+        usarAplicativo: 'use the app',
+        botao: 'Confirm',
+        conferindo: 'Checking…',
+        recusado: 'That code is invalid or expired. Check your app and try again.',
+        expirou: 'This sign-in expired. Start again.',
+        voltar: 'Back to sign in'
+      },
+      sso: {
+        titulo: 'Continue with',
+        divisor: 'or with e-mail and password',
+        provedores: { google: 'Google', apple: 'Apple', microsoft: 'Microsoft' },
+        acao: (p) => `Continue with ${p}`,
+        nota: 'In this demonstration all three sign in to a fictitious account — nothing is exchanged with the provider.',
+        entrando: (p) => `Signing in with ${p}…`
+      },
       recuperarTexto: [
         'Write to ',
         ' from the registered address and we give the access back the same business day. ' +
@@ -370,7 +393,8 @@ export default {
         { id: 'projetos', label: 'Projects' },
         { id: 'cursos', label: 'Courses' },
         { id: 'licencas', label: 'Licences' },
-        { id: 'docs', label: 'Documents' }
+        { id: 'docs', label: 'Documents' },
+        { id: 'seguranca', label: 'Security' }
       ],
       fases: ['Request', 'Proposal', 'Contract', 'Survey', 'Design', 'Delivery'],
       secoes: {
@@ -378,6 +402,47 @@ export default {
         cursos: { kicker: 'My courses', titulo: 'Pick up where you left off' },
         licencas: { kicker: 'My licences', titulo: 'Software and tools' },
         docs: { kicker: 'My documents', titulo: 'Proposals, contracts and receipts' }
+      },
+      seguranca: {
+        kicker: 'Security',
+        titulo: 'Two-factor authentication',
+        seloAtivo: 'On',
+        seloInativo: 'Off',
+        campo: 'Six-digit code',
+        resumoInativo:
+          'Right now your account opens with the password alone. With the second factor, ' +
+          'signing in also requires a six-digit code generated on your phone — whoever ' +
+          'learns the password still cannot get in.',
+        resumoAtivo: 'Signing in to this account requires the code from your app.',
+        desde: (q) => `turned on ${q}`,
+        restantes: (n) => `${n} recovery codes still valid`,
+        ativar: 'Turn on two-factor',
+        preparando: 'Preparing…',
+        passo1: '1 · Register the secret in your app',
+        passo1Texto:
+          'Tap the link below to open your authenticator app, or type the secret by hand. ' +
+          'Any TOTP app works: Google Authenticator, Aegis, 1Password, Bitwarden.',
+        abrirApp: 'Open in authenticator app',
+        segredoRotulo: 'Secret, to type by hand',
+        copiar: 'copy',
+        copiado: 'copied',
+        passo2: '2 · Confirm with the code it shows',
+        recusado: 'That code is invalid or expired. Check your app and try again.',
+        confirmar: 'Confirm and turn on',
+        confirmando: 'Checking…',
+        cancelar: 'Cancel',
+        codigosTitulo: 'Keep these recovery codes',
+        codigosTexto:
+          'Each one works once, and they are what gives the access back if the phone is lost. ' +
+          'They appear now and will not appear again.',
+        codigosOk: 'I saved the codes',
+        desativar: 'Turn off',
+        desativarTexto: 'Type a code from the app, or a recovery code, to turn it off.',
+        desativando: 'Turning off…',
+        nota:
+          'In this demonstration the second factor is real — the code comes from your app, ' +
+          'computed as RFC 6238 specifies. What is not real is the rest of the account, and ' +
+          'the secret lives only in this tab.'
       },
       outroProjeto: 'Need another project? The screening takes about three minutes and commits you to nothing.',
       solicitar: 'Request a quote',

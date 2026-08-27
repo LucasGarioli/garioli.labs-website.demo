@@ -8,8 +8,17 @@
 //! As duas implementações expõem exatamente a mesma superfície e lançam o mesmo
 //! `ErroApi`, então nenhuma página sabe qual das duas está atendendo.
 
-import { api as http } from './api-http.js';
-import { api as demo, EMAIL_DONO } from './api-demo.js';
+import {
+  api as http,
+  PROVEDORES as provedoresHttp,
+  SEGUNDO_FATOR as segundoFatorHttp
+} from './api-http.js';
+import {
+  api as demo,
+  EMAIL_DONO,
+  PROVEDORES as provedoresDemo,
+  SEGUNDO_FATOR as segundoFatorDemo
+} from './api-demo.js';
 
 export { ErroApi, exigeSessao } from './api-erros.js';
 
@@ -20,3 +29,10 @@ export const MODO_DEMO = !import.meta.env.VITE_API_BASE;
 export { EMAIL_DONO };
 
 export const api = MODO_DEMO ? demo : http;
+
+/** Provedores de identidade que este backend realmente atende. A tela de
+ *  acesso só desenha o que estiver aqui. */
+export const PROVEDORES = MODO_DEMO ? provedoresDemo : provedoresHttp;
+
+/** Verificação em dois fatores atendida por este backend. */
+export const SEGUNDO_FATOR = MODO_DEMO ? segundoFatorDemo : segundoFatorHttp;

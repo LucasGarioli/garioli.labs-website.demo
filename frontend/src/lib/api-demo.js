@@ -19,9 +19,28 @@
 import { ErroApi } from './api-erros.js';
 import { traduzSchema } from './triagem-en.js';
 import { cpfOuCnpjValido, cpfValido, emailValido } from './documento.js';
+import { codigosDeRecuperacao, confere, emitirSegredo, uriOtpAuth } from './totp.js';
 
 /** E-mail que entra como dono. Qualquer outro entra como cliente. */
 export const EMAIL_DONO = 'demo@exemplo.com';
+
+/** Provedores de identidade oferecidos na tela de acesso.
+ *
+ *  Aqui eles não falam com ninguém: o fluxo de código de autorização exige um
+ *  segredo de cliente, e segredo de cliente não vive no navegador. O que esta
+ *  build demonstra é a tela e o que acontece depois do retorno — a conta que
+ *  nasce, o papel que ela recebe e a sessão que se abre. O fluxo OIDC de
+ *  verdade é do backend Axum, quando a API for hospedada. */
+export const PROVEDORES = ['google', 'apple', 'microsoft'];
+
+/** O segundo fator funciona aqui: o código sai do aplicativo de verdade. */
+export const SEGUNDO_FATOR = true;
+
+const CONTA_DE_PROVEDOR = {
+  google: { nome: 'Visitante do Google', email: 'visitante.google@exemplo.com' },
+  apple: { nome: 'Visitante da Apple', email: 'visitante.apple@exemplo.com' },
+  microsoft: { nome: 'Visitante da Microsoft', email: 'visitante.microsoft@exemplo.com' }
+};
 
 const CHAVE = 'gl_demo';
 
@@ -32,7 +51,7 @@ const CHAVE = 'gl_demo';
  *  `sessionStorage` sem erro nenhum — é JSON válido — e só aparece na tela,
  *  como NaN em todo lugar onde havia dinheiro. Quem estivesse com a aba aberta
  *  durante um deploy veria exatamente isso. */
-const VERSAO_ESTADO = 2;
+const VERSAO_ESTADO = 3;
 const LATENCIA = 180;
 
 // ---------- utilidades ----------
@@ -391,7 +410,13 @@ function semente() {
     ],
     sequencia: 0,
     usuarios: [],
-    sessao: null
+    sessao: null,
+    /// Segundo fator por usuário: `{ segredo, codigos, criado_em }`. O segredo
+    /// é de verdade — o código de seis dígitos que esta demonstração aceita é
+    /// o mesmo que o aplicativo autenticador mostra.
+    doisFatores: {},
+    /// Desafios abertos: senha já conferida, faltando o segundo fator.
+    desafios: {}
   };
 }
 
@@ -1716,6 +1741,18 @@ function impostos() {
  *  transformaria esta rota num verificador de quais e-mails têm conta. */
 const CREDENCIAL_INVALIDA = 'E-mail ou senha incorretos';
 
+const CODIGO_INVALIDO = 'Código inválido ou expirado';
+const RECUSADO = () => new ErroApi(401, CODIGO_INVALIDO, 'codigo_invalido');
+
+/** Senha conferida, sessão ainda não. O desafio é o que carrega quem é a
+ *  pessoa entre as duas etapas — o front nunca vê o id do usuário. */
+function abrirDesafio(usuario) {
+  const desafio = uid();
+  dados.desafios[desafio] = { usuario_id: usuario.id, criado_em: Date.now() };
+  salvar();
+  return { segundo_fator: true, desafio };
+}
+
 function entrarComo(nome, email, papel) {
   const alvo = email.trim().toLowerCase();
   let u = dados.usuarios.find((x) => x.email === alvo);
@@ -1738,9 +1775,132 @@ export const api = {
     }
     const alvo = email.trim().toLowerCase();
     const dono = alvo === EMAIL_DONO;
+    // A conta só existe depois que a senha passa — mas a sessão, não: se
+    // houver segundo fator, quem entra é o desafio, não o usuário.
+    const existente = dados.usuarios.find((x) => x.email === alvo);
+    if (existente && dados.doisFatores[existente.id]) {
+      return abrirDesafio(existente);
+    }
     const u = entrarComo(dono ? 'Lucas Garioli' : 'Visitante da Demonstração', alvo, dono ? 'dono' : 'cliente');
     registrar('Acesso', `Entrada de ${u.email}`);
     return publico(u);
+  },
+
+  /** Entrada por provedor de identidade.
+   *
+   *  O que esta demonstração não faz: sair da página, pedir consentimento ao
+   *  provedor, trocar código por token. O que ela faz é o depois — a conta
+   *  que o retorno criaria, com o papel que ela recebe e a sessão aberta. */
+  async entrarCom(provedor) {
+    await espera();
+    const perfil = CONTA_DE_PROVEDOR[provedor];
+    if (!perfil) throw new ErroApi(400, 'Provedor desconhecido');
+    const existente = dados.usuarios.find((x) => x.email === perfil.email);
+    if (existente && dados.doisFatores[existente.id]) {
+      return abrirDesafio(existente);
+    }
+    const u = entrarComo(perfil.nome, perfil.email, 'cliente');
+    registrar('Acesso', `Entrada por ${provedor} — ${u.email}`);
+    return publico(u);
+  },
+
+  /** Conclui a entrada com o código do aplicativo ou um de recuperação. */
+  async concluirSegundoFator(desafio, codigo) {
+    await espera();
+    const aberto = dados.desafios[desafio];
+    // Desafio de outra sessão, expirado ou inventado: a mesma recusa. Dizer
+    // qual dos três seria contar de quem é a conta.
+    if (!aberto || Date.now() - aberto.criado_em > 5 * 60 * 1000) {
+      delete dados.desafios[desafio];
+      salvar();
+      throw new ErroApi(401, 'Este acesso expirou. Entre de novo.', 'desafio_expirado');
+    }
+    const u = dados.usuarios.find((x) => x.id === aberto.usuario_id);
+    const fator = u && dados.doisFatores[u.id];
+    if (!fator) throw RECUSADO();
+
+    const limpo = (codigo ?? '').trim().toUpperCase();
+    const recuperacao = fator.codigos.indexOf(limpo);
+    if (recuperacao >= 0) {
+      // Código de recuperação é de uso único: gastá-lo é o que impede que a
+      // folha de papel perdida sirva duas vezes.
+      fator.codigos.splice(recuperacao, 1);
+      registrar('Acesso', `Entrada com código de recuperação — ${u.email}`, true);
+    } else if (await confere(fator.segredo, codigo)) {
+      registrar('Acesso', `Entrada com segundo fator — ${u.email}`);
+    } else {
+      throw RECUSADO();
+    }
+
+    delete dados.desafios[desafio];
+    dados.sessao = u.id;
+    salvar();
+    return publico(u);
+  },
+
+  // ---------- segundo fator, na conta ----------
+
+  async segundoFator() {
+    await espera();
+    const u = exigeAutenticado();
+    const fator = dados.doisFatores[u.id];
+    return {
+      ativo: Boolean(fator),
+      desde: fator?.criado_em ?? null,
+      codigos_restantes: fator?.codigos.length ?? 0
+    };
+  },
+
+  /** Emite um segredo novo e devolve o que a pessoa precisa para cadastrá-lo.
+   *  Ainda não ativa nada: sem um código conferido, ativar seria trancar a
+   *  conta de quem errou o cadastro. */
+  async iniciarSegundoFator() {
+    await espera();
+    const u = exigeAutenticado();
+    if (dados.doisFatores[u.id]) throw new ErroApi(409, 'O segundo fator já está ativo');
+    const segredo = emitirSegredo();
+    dados.pendente2fa = { usuario_id: u.id, segredo };
+    salvar();
+    return {
+      segredo,
+      // Em grupos de quatro, que é como se digita um segredo à mão.
+      formatado: segredo.match(/.{1,4}/g).join(' '),
+      uri: uriOtpAuth({ segredo, conta: u.email, emissor: 'Garioli Labs' })
+    };
+  },
+
+  async confirmarSegundoFator(codigo) {
+    await espera();
+    const u = exigeAutenticado();
+    const pendente = dados.pendente2fa;
+    if (!pendente || pendente.usuario_id !== u.id) {
+      throw new ErroApi(409, 'Comece o cadastro do segundo fator de novo');
+    }
+    if (!(await confere(pendente.segredo, codigo))) throw RECUSADO();
+
+    const codigos = codigosDeRecuperacao();
+    dados.doisFatores[u.id] = { segredo: pendente.segredo, codigos, criado_em: agora() };
+    delete dados.pendente2fa;
+    salvar();
+    registrar('Acesso', `Segundo fator ativado — ${u.email}`, true);
+    // Os códigos aparecem uma vez só, aqui. Guardá-los para mostrar de novo
+    // depois seria guardar em claro o que existe justamente para o caso de o
+    // resto ter sido perdido.
+    return { codigos };
+  },
+
+  async desativarSegundoFator(codigo) {
+    await espera();
+    const u = exigeAutenticado();
+    const fator = dados.doisFatores[u.id];
+    if (!fator) throw new ErroApi(409, 'O segundo fator não está ativo');
+    const limpo = (codigo ?? '').trim().toUpperCase();
+    const valido = fator.codigos.includes(limpo) || (await confere(fator.segredo, codigo));
+    if (!valido) throw RECUSADO();
+    delete dados.doisFatores[u.id];
+    salvar();
+    registrar('Acesso', `Segundo fator desativado — ${u.email}`, true);
+    return { ativo: false };
   },
 
   async criarConta(nome, email, senha) {

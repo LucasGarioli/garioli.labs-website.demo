@@ -272,6 +272,33 @@ export default {
         }
       },
       abas: { entrar: 'Entrar', criar: 'Criar conta' },
+      doisFatores: {
+        kicker: 'Verificação',
+        titulo: 'Confirme que é você',
+        sub: 'Abra o aplicativo autenticador e digite o código de seis dígitos.',
+        campo: 'Código de seis dígitos',
+        ou: 'Perdeu o telefone? Use um código de recuperação.',
+        recuperacaoCampo: 'Código de recuperação',
+        usarRecuperacao: 'usar código de recuperação',
+        usarAplicativo: 'usar o aplicativo',
+        botao: 'Confirmar',
+        conferindo: 'Conferindo…',
+        recusado: 'Código inválido ou expirado. Confira o aplicativo e tente de novo.',
+        expirou: 'Este acesso expirou. Entre de novo.',
+        voltar: 'Voltar ao acesso'
+      },
+      sso: {
+        titulo: 'Entrar com',
+        divisor: 'ou com e-mail e senha',
+        provedores: { google: 'Google', apple: 'Apple', microsoft: 'Microsoft' },
+        acao: (p) => `Entrar com ${p}`,
+        // A honestidade e' parte da tela: nesta build nao ha servidor para
+        // guardar o segredo do cliente, entao o botao nao fala com o
+        // provedor nenhum. Dizer isso e' melhor do que deixar parecer que
+        // fala.
+        nota: 'Na demonstração, os três entram numa conta fictícia — não há troca com o provedor.',
+        entrando: (p) => `Entrando com ${p}…`
+      },
       recuperarTexto: [
         'Escreva para ',
         ' do e-mail cadastrado e devolvemos o acesso no mesmo dia útil. Quando a ' +
@@ -368,7 +395,8 @@ export default {
         { id: 'projetos', label: 'Projetos' },
         { id: 'cursos', label: 'Cursos' },
         { id: 'licencas', label: 'Licenças' },
-        { id: 'docs', label: 'Documentos' }
+        { id: 'docs', label: 'Documentos' },
+        { id: 'seguranca', label: 'Segurança' }
       ],
       fases: ['Solicitação', 'Proposta', 'Contrato', 'Levantamento', 'Projeto', 'Entrega'],
       secoes: {
@@ -376,6 +404,48 @@ export default {
         cursos: { kicker: 'Meus cursos', titulo: 'Continue de onde parou' },
         licencas: { kicker: 'Minhas licenças', titulo: 'Softwares e ferramentas' },
         docs: { kicker: 'Meus documentos', titulo: 'Propostas, contratos e recibos' }
+      },
+      seguranca: {
+        kicker: 'Segurança',
+        titulo: 'Verificação em dois fatores',
+        seloAtivo: 'Ativa',
+        seloInativo: 'Inativa',
+        campo: 'Código de seis dígitos',
+        resumoInativo:
+          'Hoje sua conta entra só com a senha. Com o segundo fator, entrar passa a exigir ' +
+          'também um código de seis dígitos gerado no seu telefone — quem descobrir a senha ' +
+          'ainda não entra.',
+        resumoAtivo: 'Entrar nesta conta exige o código do aplicativo.',
+        desde: (q) => `ativada em ${q}`,
+        restantes: (n) => `${n} códigos de recuperação ainda válidos`,
+        ativar: 'Ativar segundo fator',
+        preparando: 'Preparando…',
+        passo1: '1 · Cadastre o segredo no aplicativo',
+        passo1Texto:
+          'Toque no link abaixo para abrir o seu aplicativo autenticador, ou digite o segredo ' +
+          'à mão. Serve qualquer aplicativo TOTP: Google Authenticator, Aegis, 1Password, Bitwarden.',
+        abrirApp: 'Abrir no aplicativo autenticador',
+        segredoRotulo: 'Segredo, para digitar à mão',
+        copiar: 'copiar',
+        copiado: 'copiado',
+        passo2: '2 · Confirme com o código que ele mostrar',
+        recusado: 'Código inválido ou expirado. Confira o aplicativo e tente de novo.',
+        confirmar: 'Confirmar e ativar',
+        confirmando: 'Conferindo…',
+        cancelar: 'Cancelar',
+        codigosTitulo: 'Guarde estes códigos de recuperação',
+        codigosTexto:
+          'Cada um serve uma vez, e é o que devolve o acesso se o telefone se perder. ' +
+          'Eles aparecem agora e não voltam a aparecer.',
+        codigosOk: 'Guardei os códigos',
+        desativar: 'Desativar',
+        desativarTexto: 'Digite um código do aplicativo, ou um de recuperação, para desativar.',
+        desativando: 'Desativando…',
+        // A honestidade da demonstração: o segundo fator aqui é real, o resto não.
+        nota:
+          'Nesta demonstração o segundo fator é de verdade — o código vem do seu aplicativo, ' +
+          'calculado como manda a RFC 6238. O que não é real é o resto da conta, e o segredo ' +
+          'vive só nesta aba.'
       },
       outroProjeto: 'Precisa de outro projeto? A triagem leva cerca de três minutos e não gera compromisso.',
       solicitar: 'Solicitar orçamento',
