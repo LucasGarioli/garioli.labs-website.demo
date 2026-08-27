@@ -9,6 +9,7 @@ SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público
 
 [![CI](https://github.com/LucasGarioli/garioli.labs-website.demo/actions/workflows/ci.yml/badge.svg)](https://github.com/LucasGarioli/garioli.labs-website.demo/actions/workflows/ci.yml)
 [![Demo ao vivo](https://img.shields.io/badge/demo-demo.gariolilabs.com-ec3013)](https://demo.gariolilabs.com)
+[![Versão](https://img.shields.io/github/v/release/LucasGarioli/garioli.labs-website.demo?label=vers%C3%A3o&color=1a1a1a)](https://github.com/LucasGarioli/garioli.labs-website.demo/releases/latest)
 [![Rust](https://img.shields.io/badge/Rust-Axum%200.7-000000?logo=rust&logoColor=white)](https://github.com/tokio-rs/axum)
 [![Svelte](https://img.shields.io/badge/Svelte-5%20runes-ff3e00?logo=svelte&logoColor=white)](https://svelte.dev)
 [![Cloudflare Workers](https://img.shields.io/badge/deploy-Cloudflare%20Workers-f38020?logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/workers/)
