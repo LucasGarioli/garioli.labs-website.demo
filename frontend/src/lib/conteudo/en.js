@@ -44,6 +44,9 @@ export default {
     secoesRotulo: 'Site sections',
     idiomaRotulo: 'Language',
     entrar: 'Sign in',
+    conta: 'My account',
+    painel: 'Dashboard',
+    sair: 'Sign out',
     orcamento: 'Request a quote',
     secoes: [
       { id: 'servicos', rotulo: 'Services' },
@@ -394,6 +397,7 @@ export default {
         { id: 'cursos', label: 'Courses' },
         { id: 'licencas', label: 'Licences' },
         { id: 'docs', label: 'Documents' },
+        { id: 'perfil', label: 'Details' },
         { id: 'seguranca', label: 'Security' }
       ],
       fases: ['Request', 'Proposal', 'Contract', 'Survey', 'Design', 'Delivery'],
@@ -403,6 +407,97 @@ export default {
         licencas: { kicker: 'My licences', titulo: 'Software and tools' },
         docs: { kicker: 'My documents', titulo: 'Proposals, contracts and receipts' }
       },
+      perfil: {
+        kicker: 'My details',
+        titulo: 'Account details',
+        salvar: 'Save changes',
+        salvando: 'Saving…',
+        salvo: 'Details updated.',
+        obrigatorio: 'required',
+        opcional: 'optional',
+
+        foto: {
+          titulo: 'Photo',
+          texto:
+            'It shows in the top bar and on the documents you sign. The image is ' +
+            'cropped to a square and scaled down before it leaves this page.',
+          enviar: 'Upload a photo',
+          trocar: 'Replace photo',
+          remover: 'Remove',
+          enviando: 'Uploading…',
+          semFoto: 'No photo — the account shows its initials.',
+          tipoInvalido: 'Choose a PNG, JPEG or WebP file.',
+          grandeDemais: 'That image is over 10 MB. Pick a smaller one.',
+          falhou: 'I could not read that image.'
+        },
+
+        identificacao: {
+          titulo: 'Identification',
+          nome: 'Full name',
+          email: 'E-mail',
+          emailNota: 'The e-mail identifies the account and is how you sign in — to change it, talk to us.',
+          telefone: 'Phone'
+        },
+
+        endereco: {
+          titulo: 'Address',
+          texto: 'Where the survey goes, and what the contract states.',
+          cep: 'Post code',
+          logradouro: 'Street',
+          numero: 'Number',
+          complemento: 'Unit, floor',
+          bairro: 'District',
+          cidade: 'City',
+          uf: 'State',
+          pais: 'Country'
+        },
+
+        faturamento: {
+          titulo: 'Billing',
+          texto: 'This is what goes on the invoice and on the contract.',
+          tipo: 'Invoice made out to',
+          fisica: 'An individual',
+          juridica: 'A company',
+          cpf: 'CPF',
+          cnpj: 'CNPJ',
+          razaoSocial: 'Registered name',
+          inscricao: 'State registration',
+          isento: 'leave empty if exempt',
+          mesmoEndereco: 'Bill to the address above'
+        },
+
+        pagamento: {
+          titulo: 'Payment methods',
+          texto:
+            'The card number never touches this page or any server of ours: the ' +
+            'processor collects it in its own fields, and what comes back here is ' +
+            'the summary below.',
+          vazio: 'No payment method on file.',
+          adicionarCartao: 'Add a card',
+          adicionarPix: 'Add Pix',
+          adicionando: 'Opening…',
+          padrao: 'Default',
+          tornarPadrao: 'Make default',
+          remover: 'Remove',
+          cartao: (m) => `${m.bandeira} •••• ${m.final}`,
+          validade: (m) => `expires ${m.validade}`,
+          pix: 'Pix',
+          demonstracao: 'In this demonstration the enrolment is simulated — no real data is asked for or stored.'
+        },
+
+        erros: {
+          nome_invalido: 'Enter your full name.',
+          telefone_invalido: 'That phone number is incomplete.',
+          cep_invalido: 'The post code has eight digits.',
+          uf_invalida: 'Unknown state.',
+          cpf_invalido: 'That CPF does not exist — check the digits.',
+          cnpj_invalido: 'That CNPJ does not exist — check the digits.',
+          razao_social_vazia: 'Enter the registered name.',
+          foto_invalida: 'Upload a PNG, JPEG or WebP image.',
+          foto_grande: 'That image ended up too large.'
+        }
+      },
+
       seguranca: {
         kicker: 'Security',
         titulo: 'Two-factor authentication',

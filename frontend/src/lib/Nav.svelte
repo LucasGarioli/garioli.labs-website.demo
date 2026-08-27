@@ -1,8 +1,22 @@
 <script>
+  import { goto } from '$app/navigation';
   import { page } from '$app/stores';
+  import Marca from '$lib/Marca.svelte';
+  import { api } from '$lib/api.js';
+  import { aoMudar, esquecer, lembrada, lembrar } from '$lib/sessao.js';
   import { IDIOMAS, ancora, caminhoBase, rota, textos } from '$lib/conteudo/index.js';
 
-  let { cta = true, lang = 'pt' } = $props();
+  /// `modo` diz para que serve a barra naquela página:
+  ///
+  ///   `site`   — a vitrine: seções, anúncio, acesso e chamada de orçamento.
+  ///   `app`    — conta e painel: marca, quem está dentro e a saída. O menu de
+  ///              seções apontaria para âncoras que não existem ali.
+  ///   `acesso` — a tela de entrar: só a marca e o idioma. Um botão "Entrar"
+  ///              na tela de entrar não leva a lugar nenhum.
+  let { modo = 'site', lang = 'pt' } = $props();
+
+  const vitrine = $derived(modo === 'site');
+  const mostraAcoes = $derived(modo !== 'acesso');
 
   const t = $derived(textos(lang));
 
@@ -19,12 +33,61 @@
   let trilho = $state(null);
   let traco = $state(null);
 
+  // Quem está logado não pode ver "Entrar" na barra. A dica anotada responde
+  // no primeiro quadro depois da hidratação; o backend responde de verdade
+  // logo em seguida e corrige.
+  //
+  // Três estados, não dois: `undefined` é "ainda não se sabe" — o que o HTML
+  // pré-renderizado sabe, porque ele é o mesmo arquivo para todo mundo.
+  // `null` é "ninguém". A diferença importa em `app`: ali a página exige
+  // sessão, então "Entrar" nunca é a resposta certa, e oferecê-lo enquanto
+  // se espera é exatamente o defeito relatado, só que na recarga.
+  let sessao = $state(undefined);
+  let saindo = $state(false);
+
+  $effect(() => {
+    sessao = lembrada();
+    api
+      .eu()
+      .then((u) => {
+        sessao = u;
+        lembrar(u);
+      })
+      .catch(() => {
+        sessao = null;
+        esquecer();
+      });
+    // Trocar a foto ou o nome acontece na página, não aqui: sem escutar, a
+    // barra ficaria com o retrato antigo até a próxima navegação.
+    return aoMudar(() => (sessao = lembrada()));
+  });
+
+  const destino = $derived(sessao?.papel === 'dono' ? '/admin' : '/conta');
+
+  // Na vitrine o anônimo é a aposta certa: é para ele que a página existe, e
+  // a hidratação corrige em seguida quem já entrou. Dentro da conta, não.
+  const ofereceEntrada = $derived(vitrine || sessao === null);
+
+  async function sair() {
+    if (saindo) return;
+    saindo = true;
+    // A anotação some antes da chamada: se a rede falhar no meio, é melhor a
+    // barra dizer "Entrar" a mais do que a menos.
+    esquecer();
+    sessao = null;
+    await api.sair().catch(() => {});
+    saindo = false;
+    // Sair de dentro de uma página guardada tem que tirar a página da tela
+    // junto — senão os dados de quem saiu continuam ali.
+    goto(rota('/', lang));
+  }
+
   const naHome = $derived(base === '/');
 
   // Marca a seção que está sob o cabeçalho e desliza o traço até ela. Só roda
   // onde as seções existem; nas outras páginas o traço nunca aparece.
   $effect(() => {
-    if (!naHome || !trilho || !traco) return;
+    if (!vitrine || !naHome || !trilho || !traco) return;
 
     const links = Array.from(trilho.querySelectorAll('a[data-secao]'));
     const alvos = links.map((a) => document.getElementById(a.dataset.secao));
@@ -70,11 +133,13 @@
 
 <div class="chrome" bind:this={barra}>
   <div class="aviso">
-    <div class="aviso-interno">
-      <a href={ancora('software', lang)} class="anuncio">
-        <span class="ponto" aria-hidden="true"></span>
-        {t.nav.aviso}
-      </a>
+    <div class="aviso-interno" class:so-idioma={!vitrine}>
+      {#if vitrine}
+        <a href={ancora('software', lang)} class="anuncio">
+          <span class="ponto" aria-hidden="true"></span>
+          {t.nav.aviso}
+        </a>
+      {/if}
       <span class="idiomas" aria-label={t.nav.idiomaRotulo}>
         {#each IDIOMAS as i, n}
           {#if n > 0}<span class="risco" aria-hidden="true">/</span>{/if}
@@ -89,32 +154,44 @@
           >
         {/each}
       </span>
-      <a href={ancora('contato', lang)} class="aviso-link">{t.nav.avisoLink}</a>
+      {#if vitrine}
+        <a href={ancora('contato', lang)} class="aviso-link">{t.nav.avisoLink}</a>
+      {/if}
     </div>
   </div>
 
   <div class="rule barra">
-    <a href={rota('/', lang)} class="marca" title={t.nav.inicio}>
-      <img src="/assets/garioli-mark.png" alt="" width="32" height="32" />
-      <span class="logotipo">
-        <span class="nome">Garioli</span>
-        <span class="sobrenome">Labs</span>
-      </span>
-    </a>
+    <span class="lugar-da-marca"><Marca {lang} tamanho="grande" /></span>
 
-    <nav class="secoes" bind:this={trilho} aria-label={t.nav.secoesRotulo}>
-      {#each SECOES as s}
-        <a href={ancora(s.id, lang)} data-secao={s.id}>{s.rotulo}</a>
-      {/each}
-      <span class="traco" aria-hidden="true" bind:this={traco}></span>
-    </nav>
+    {#if vitrine}
+      <nav class="secoes" bind:this={trilho} aria-label={t.nav.secoesRotulo}>
+        {#each SECOES as s}
+          <a href={ancora(s.id, lang)} data-secao={s.id}>{s.rotulo}</a>
+        {/each}
+        <span class="traco" aria-hidden="true" bind:this={traco}></span>
+      </nav>
+    {/if}
 
+    {#if mostraAcoes}
     <span class="acoes">
-      <a href={rota('/entrar', lang)} class="entrar">{t.nav.entrar}</a>
-      {#if cta}
+      {#if sessao}
+        <a href={rota(destino, lang)} class="conta" title={sessao.nome}>
+          {#if sessao.foto}
+            <img class="retrato" src={sessao.foto} alt="" width="26" height="26" />
+          {:else}
+            <span class="iniciais" aria-hidden="true">{sessao.iniciais}</span>
+          {/if}
+          <span>{sessao.papel === 'dono' ? t.nav.painel : t.nav.conta}</span>
+        </a>
+        <button type="button" class="sair" onclick={sair} disabled={saindo}>{t.nav.sair}</button>
+      {:else if ofereceEntrada}
+        <a href={rota('/entrar', lang)} class="entrar">{t.nav.entrar}</a>
+      {/if}
+      {#if vitrine}
         <a href={rota('/orcamento', lang)} class="proposta">{t.nav.orcamento}</a>
       {/if}
     </span>
+    {/if}
   </div>
 </div>
 
@@ -142,6 +219,9 @@
     letter-spacing: 0.12em;
     text-transform: uppercase;
   }
+  /* Sem o anúncio, o seletor de idioma perde o que o empurrava para o meio
+     da faixa; ele passa a começar a linha, alinhado com a marca abaixo. */
+  .so-idioma { justify-content: flex-start; }
   .anuncio {
     display: flex;
     align-items: center;
@@ -195,35 +275,12 @@
     flex-wrap: wrap;
     padding: 10px 48px;
   }
-  .marca {
+  /* O desenho da marca mora em Marca.svelte; aqui só o lugar dela na barra. */
+  .lugar-da-marca {
     display: flex;
     align-items: center;
     margin-right: auto;
-    color: var(--color-text);
   }
-  .marca:hover { text-decoration: none; }
-  .marca img {
-    display: block;
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-    margin-right: 14px;
-    /* Centraliza pela altura de caixa alta, não pela caixa de linha: o centro
-       da tinta de GARIOLI fica 1px acima do centro do bloco. */
-    position: relative;
-    top: -1px;
-  }
-  .logotipo {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    font-family: var(--font-body);
-    font-weight: 600;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-  }
-  .nome { font-size: 18px; }
-  .sobrenome { font-size: 13px; opacity: 0.72; }
 
   .secoes {
     position: relative;
@@ -281,6 +338,61 @@
     color: var(--color-neutral-100);
     text-decoration: none;
   }
+
+  /* — com sessão aberta —
+     A inicial em quadrado é a mesma marca de pessoa que a conta e o painel
+     usam; repeti-la aqui é o que faz a barra dizer *quem* está dentro. */
+  .conta {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 14px 7px 7px;
+    border: 2px solid var(--color-text);
+    color: var(--color-text);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .conta:hover {
+    background: var(--color-surface);
+    text-decoration: none;
+  }
+  /* O retrato ocupa exatamente o lugar das iniciais: trocar um pelo outro não
+     pode mexer na largura da barra. */
+  .retrato {
+    flex: none;
+    display: block;
+    width: 26px;
+    height: 26px;
+    object-fit: cover;
+  }
+  .iniciais {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    background: var(--color-text);
+    color: var(--color-neutral-100);
+    font-family: var(--font-display, var(--font-body));
+    font-size: 11px;
+    letter-spacing: 0.02em;
+  }
+  .sair {
+    background: transparent;
+    border: 0;
+    padding: 11px 6px;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--color-accent-700);
+    text-decoration: underline;
+  }
+  .sair:disabled { color: var(--color-neutral-600); cursor: default; }
   .proposta {
     background: var(--color-accent-600);
     color: var(--color-neutral-100);

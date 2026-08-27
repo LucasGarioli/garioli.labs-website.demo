@@ -2,6 +2,7 @@
   import Seo from '$lib/Seo.svelte';
   import { api } from '$lib/api.js';
   import { empresa } from '$lib/identidade.js';
+  import Marca from '$lib/Marca.svelte';
   import { rota, textos } from '$lib/conteudo/index.js';
   import { REGRA_CAMPO, campoValido, teclado } from '$lib/documento.js';
 
@@ -101,8 +102,7 @@
 <Seo {lang} caminho="/proposta" titulo={t.titulo} descricao={t.titulo} indexar={false} />
 
 <div class="rule" style="display:flex;align-items:center;gap:20px;padding:16px 40px;flex-wrap:wrap">
-  <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
-     style="font-size:16px;color:inherit;text-decoration:none">GARIOLI LABS</a>
+  <Marca {lang} tamanho="media" />
   <span style="flex:1"></span>
   {#each t.etapas as [id, label]}
     <span style="font-size:10.5px;letter-spacing:0.12em;text-transform:uppercase;font-weight:{etapa === id ? 700 : 500};color:{etapa === id ? 'var(--color-accent-700)' : 'var(--color-neutral-600)'}">{label}</span>

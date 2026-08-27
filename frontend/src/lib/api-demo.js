@@ -18,7 +18,7 @@
 
 import { ErroApi } from './api-erros.js';
 import { traduzSchema } from './triagem-en.js';
-import { cpfOuCnpjValido, cpfValido, emailValido } from './documento.js';
+import { cnpjValido, cpfOuCnpjValido, cpfValido, emailValido } from './documento.js';
 import { codigosDeRecuperacao, confere, emitirSegredo, uriOtpAuth } from './totp.js';
 
 /** E-mail que entra como dono. Qualquer outro entra como cliente. */
@@ -36,6 +36,10 @@ export const PROVEDORES = ['google', 'apple', 'microsoft'];
 /** O segundo fator funciona aqui: o código sai do aplicativo de verdade. */
 export const SEGUNDO_FATOR = true;
 
+/** O cadastro de perfil existe neste backend. Mesma regra das outras
+ *  capacidades: a aba só é desenhada onde as rotas respondem. */
+export const PERFIL = true;
+
 const CONTA_DE_PROVEDOR = {
   google: { nome: 'Visitante do Google', email: 'visitante.google@exemplo.com' },
   apple: { nome: 'Visitante da Apple', email: 'visitante.apple@exemplo.com' },
@@ -51,7 +55,7 @@ const CHAVE = 'gl_demo';
  *  `sessionStorage` sem erro nenhum — é JSON válido — e só aparece na tela,
  *  como NaN em todo lugar onde havia dinheiro. Quem estivesse com a aba aberta
  *  durante um deploy veria exatamente isso. */
-const VERSAO_ESTADO = 3;
+const VERSAO_ESTADO = 4;
 const LATENCIA = 180;
 
 // ---------- utilidades ----------
@@ -99,7 +103,10 @@ const publico = (u) => ({
   nome: u.nome,
   iniciais: iniciaisDe(u.nome),
   email: u.email,
-  papel: u.papel
+  papel: u.papel,
+  // A barra de topo desenha a foto onde desenharia as iniciais; quem nunca
+  // enviou uma continua com as iniciais, que é o padrão e não um erro.
+  foto: dados.perfis?.[u.id]?.foto ?? null
 });
 
 // ---------- estado ----------
@@ -416,7 +423,11 @@ function semente() {
     /// o mesmo que o aplicativo autenticador mostra.
     doisFatores: {},
     /// Desafios abertos: senha já conferida, faltando o segundo fator.
-    desafios: {}
+    desafios: {},
+    /// Cadastro de cada conta: foto, contato, endereço e faturamento. Fica
+    /// fora de `usuarios` porque `usuarios` é identidade — o que autentica —
+    /// e isto é cadastro, que muda por outra porta e com outras regras.
+    perfis: {}
   };
 }
 
@@ -454,6 +465,107 @@ function registrar(tipo, evento, critico = false) {
   dados.auditoria.unshift({ id: uid(), quando: agora(), tipo, evento, ip: '203.0.113.10', critico });
   salvar();
 }
+
+
+// ---------- perfil ----------
+
+/** Só dígitos — o que o usuário digita vem com ponto, traço e barra. */
+const digitos = (t) => (t ?? '').replace(/\D/g, '');
+
+const UFS = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+  'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
+/** Recusa com um motivo estável: a página escolhe a frase, no idioma dela. */
+const invalido = (motivo, frase) => new ErroApi(422, frase, motivo);
+
+/** O perfil que o cadastro começa: vazio, menos o que a conta já sabe. */
+function perfilNovo(u) {
+  return {
+    foto: null,
+    nome: u.nome,
+    email: u.email,
+    telefone: '',
+    endereco: { cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', uf: '', pais: 'Brasil' },
+    faturamento: { tipo: 'fisica', documento: '', razaoSocial: '', inscricaoEstadual: '', mesmoEndereco: true },
+    pagamentos: []
+  };
+}
+
+/** O perfil de quem está logado, criado na primeira visita. */
+function perfilDe(u) {
+  if (!dados.perfis[u.id]) {
+    dados.perfis[u.id] = perfilNovo(u);
+    salvar();
+  }
+  const p = dados.perfis[u.id];
+  // O nome e o e-mail moram na conta; o perfil os espelha para a tela não ter
+  // de juntar duas fontes — e para não haver duas verdades sobre o nome.
+  p.nome = u.nome;
+  p.email = u.email;
+  return p;
+}
+
+/** O que sai para a tela: os métodos de pagamento nunca carregam mais do que
+ *  os quatro últimos dígitos, porque é só isso que existe guardado. */
+const perfilPublico = (p) => JSON.parse(JSON.stringify(p));
+
+function validarPerfil(entrada) {
+  const nome = (entrada.nome ?? '').trim();
+  if (nome.length < 2) throw invalido('nome_invalido', 'Informe o nome completo');
+
+  const tel = digitos(entrada.telefone);
+  if (tel && (tel.length < 10 || tel.length > 13)) {
+    throw invalido('telefone_invalido', 'Telefone incompleto');
+  }
+
+  const e = entrada.endereco ?? {};
+  const cep = digitos(e.cep);
+  if (cep && cep.length !== 8) throw invalido('cep_invalido', 'O CEP tem oito dígitos');
+  const uf = (e.uf ?? '').trim().toUpperCase();
+  if (uf && !UFS.includes(uf)) throw invalido('uf_invalida', 'UF desconhecida');
+
+  const f = entrada.faturamento ?? {};
+  const doc = digitos(f.documento);
+  if (doc) {
+    if (f.tipo === 'juridica' ? !cnpjValido(doc) : !cpfValido(doc)) {
+      throw invalido(
+        f.tipo === 'juridica' ? 'cnpj_invalido' : 'cpf_invalido',
+        f.tipo === 'juridica' ? 'CNPJ inválido' : 'CPF inválido'
+      );
+    }
+  }
+  if (f.tipo === 'juridica' && doc && !(f.razaoSocial ?? '').trim()) {
+    throw invalido('razao_social_vazia', 'Informe a razão social');
+  }
+
+  return {
+    nome,
+    telefone: (entrada.telefone ?? '').trim(),
+    endereco: {
+      cep: (e.cep ?? '').trim(),
+      logradouro: (e.logradouro ?? '').trim(),
+      numero: (e.numero ?? '').trim(),
+      complemento: (e.complemento ?? '').trim(),
+      bairro: (e.bairro ?? '').trim(),
+      cidade: (e.cidade ?? '').trim(),
+      uf,
+      pais: (e.pais ?? 'Brasil').trim() || 'Brasil'
+    },
+    faturamento: {
+      tipo: f.tipo === 'juridica' ? 'juridica' : 'fisica',
+      documento: (f.documento ?? '').trim(),
+      razaoSocial: (f.razaoSocial ?? '').trim(),
+      inscricaoEstadual: (f.inscricaoEstadual ?? '').trim(),
+      mesmoEndereco: f.mesmoEndereco !== false
+    }
+  };
+}
+
+/** Limite da foto já guardada — a tela reduz antes de enviar, e este é o
+ *  teto que o servidor imporia de qualquer jeito. */
+const FOTO_MAXIMA = 400 * 1024;
 
 // ---------- sessão ----------
 
@@ -1802,6 +1914,120 @@ export const api = {
     const u = entrarComo(perfil.nome, perfil.email, 'cliente');
     registrar('Acesso', `Entrada por ${provedor} — ${u.email}`);
     return publico(u);
+  },
+
+
+  // ---------- perfil ----------
+
+  /** Os dados cadastrais de quem está logado. */
+  async perfil() {
+    await espera();
+    const u = exigeAutenticado();
+    return perfilPublico(perfilDe(u));
+  },
+
+  /** Grava identificação, endereço e faturamento de uma vez.
+   *
+   *  De uma vez porque é assim que a pessoa preenche: se metade gravasse e a
+   *  outra metade fosse recusada, o cadastro ficaria pela metade sem que
+   *  ninguém pedisse isso. */
+  async salvarPerfil(entrada) {
+    await espera();
+    const u = exigeAutenticado();
+    const limpo = validarPerfil(entrada ?? {});
+    const p = perfilDe(u);
+    // O nome é da conta, não do perfil: mudá-lo aqui muda quem a barra de topo
+    // diz que está logado.
+    u.nome = limpo.nome;
+    p.nome = limpo.nome;
+    p.telefone = limpo.telefone;
+    p.endereco = limpo.endereco;
+    p.faturamento = limpo.faturamento;
+    salvar();
+    registrar('Cadastro', `Perfil atualizado por ${u.email}`);
+    return perfilPublico(p);
+  },
+
+  /** Troca a foto. Chega em data URL porque é o que um <input type="file">
+   *  produz depois que a tela a reduz; a API real receberia o binário. */
+  async enviarFoto(dataUrl) {
+    await espera();
+    const u = exigeAutenticado();
+    if (typeof dataUrl !== 'string' || !/^data:image\/(png|jpeg|webp);base64,/.test(dataUrl)) {
+      throw invalido('foto_invalida', 'Envie uma imagem PNG, JPEG ou WebP');
+    }
+    if (dataUrl.length > FOTO_MAXIMA) {
+      throw invalido('foto_grande', 'A imagem ficou grande demais');
+    }
+    const p = perfilDe(u);
+    p.foto = dataUrl;
+    salvar();
+    registrar('Cadastro', `Foto de perfil atualizada por ${u.email}`);
+    return { foto: p.foto };
+  },
+
+  async removerFoto() {
+    await espera();
+    const u = exigeAutenticado();
+    const p = perfilDe(u);
+    p.foto = null;
+    salvar();
+    registrar('Cadastro', `Foto de perfil removida por ${u.email}`);
+    return { foto: null };
+  },
+
+  /** Cadastra um meio de pagamento.
+   *
+   *  O que esta função **não** recebe é o número do cartão. Número de cartão
+   *  não passa por servidor nosso nem por campo nosso: quem o coleta é o
+   *  provedor, nos campos hospedados dele, e o que volta para cá é este
+   *  resumo — bandeira, quatro últimos dígitos, validade e um identificador.
+   *  A demonstração inventa o resumo; o formato é o de verdade. */
+  async adicionarPagamento(tipo = 'cartao') {
+    await espera();
+    const u = exigeAutenticado();
+    const p = perfilDe(u);
+    const novo =
+      tipo === 'pix'
+        ? { id: uid(), tipo: 'pix', rotulo: u.email, padrao: p.pagamentos.length === 0 }
+        : {
+            id: uid(),
+            tipo: 'cartao',
+            bandeira: ['Visa', 'Mastercard', 'Elo'][p.pagamentos.length % 3],
+            final: String(1000 + Math.floor(Math.random() * 8999)).slice(-4),
+            validade: `${String(1 + Math.floor(Math.random() * 12)).padStart(2, '0')}/${(new Date().getFullYear() % 100) + 3}`,
+            padrao: p.pagamentos.length === 0
+          };
+    p.pagamentos.push(novo);
+    salvar();
+    registrar('Cadastro', `Meio de pagamento cadastrado por ${u.email}`);
+    return perfilPublico(p);
+  },
+
+  async definirPagamentoPadrao(id) {
+    await espera();
+    const u = exigeAutenticado();
+    const p = perfilDe(u);
+    if (!p.pagamentos.some((m) => m.id === id)) throw new ErroApi(404, 'Meio de pagamento não encontrado');
+    p.pagamentos.forEach((m) => (m.padrao = m.id === id));
+    salvar();
+    return perfilPublico(p);
+  },
+
+  async removerPagamento(id) {
+    await espera();
+    const u = exigeAutenticado();
+    const p = perfilDe(u);
+    const i = p.pagamentos.findIndex((m) => m.id === id);
+    if (i < 0) throw new ErroApi(404, 'Meio de pagamento não encontrado');
+    const era = p.pagamentos[i].padrao;
+    p.pagamentos.splice(i, 1);
+    // Conta sem meio padrão é conta que falha na hora de cobrar: o primeiro
+    // que sobrou assume o lugar.
+    if (era && p.pagamentos.length) p.pagamentos[0].padrao = true;
+    salvar();
+    registrar('Cadastro', `Meio de pagamento removido por ${u.email}`);
+    return perfilPublico(p);
   },
 
   /** Conclui a entrada com o código do aplicativo ou um de recuperação. */

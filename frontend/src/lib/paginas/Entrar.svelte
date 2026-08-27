@@ -5,6 +5,7 @@
   import Nav from '$lib/Nav.svelte';
   import Seo from '$lib/Seo.svelte';
   import { api, PROVEDORES } from '$lib/api.js';
+  import { lembrar } from '$lib/sessao.js';
   import MarcaProvedor from '$lib/MarcaProvedor.svelte';
   import { empresa } from '$lib/identidade.js';
   import { rota, textos } from '$lib/conteudo/index.js';
@@ -67,6 +68,7 @@
       erro = '';
       return;
     }
+    lembrar(resposta);
     const volta = $page.url.searchParams.get('volta');
     goto(volta || rota(resposta.papel === 'dono' ? '/admin' : '/conta', lang));
   }
@@ -112,12 +114,13 @@
   // pedir de novo uma senha que o navegador já tem.
   onMount(() => {
     api.eu()
-      .then((u) =>
+      .then((u) => {
+        lembrar(u);
         goto(
           $page.url.searchParams.get('volta') ||
             rota(u.papel === 'dono' ? '/admin' : '/conta', lang)
-        )
-      )
+        );
+      })
       .catch(() => {});
   });
 
@@ -162,7 +165,7 @@
   descricao={t.descricao}
   indexar={false} />
 
-<Nav cta={false} {lang} />
+<Nav {lang} modo="acesso" />
 
 <div class="tela">
   <div style="padding:70px 48px 90px;max-width:560px">

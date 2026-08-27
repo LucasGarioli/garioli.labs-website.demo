@@ -32,6 +32,9 @@ export const PROVEDORES = [];
  *  aba que responde 404. */
 export const SEGUNDO_FATOR = false;
 
+/** Idem para o cadastro de perfil: sem as rotas no Axum, a aba não aparece. */
+export const PERFIL = false;
+
 export const api = {
   entrar: (email, senha) => req('POST', '/api/auth/entrar', { email, senha }),
   entrarCom: (provedor) => req('POST', `/api/auth/oauth/${provedor}`),
@@ -58,6 +61,18 @@ export const api = {
   contrato: (id) => req('GET', `/api/contratos/${id}`),
   assinarContrato: (id, payload) => req('POST', `/api/contratos/${id}/assinatura`, payload),
   minhaConta: () => req('GET', '/api/conta/me'),
+
+  perfil: () => req('GET', '/api/conta/perfil'),
+  salvarPerfil: (dados) => req('PUT', '/api/conta/perfil', dados),
+  // A foto vai em data URL para o corpo JSON continuar sendo um corpo JSON;
+  // o dia em que virar upload de binário, muda aqui e só aqui.
+  enviarFoto: (dataUrl) => req('PUT', '/api/conta/perfil/foto', { foto: dataUrl }),
+  removerFoto: () => req('DELETE', '/api/conta/perfil/foto'),
+  // Nenhuma destas rotas recebe número de cartão: o provedor coleta nos campos
+  // hospedados dele e devolve o identificador que o backend guarda.
+  adicionarPagamento: (tipo) => req('POST', '/api/conta/pagamentos', { tipo }),
+  definirPagamentoPadrao: (id) => req('POST', `/api/conta/pagamentos/${id}/padrao`),
+  removerPagamento: (id) => req('DELETE', `/api/conta/pagamentos/${id}`),
   adminResumo: () => req('GET', '/api/admin/resumo'),
   auditoria: () => req('GET', '/api/admin/auditoria'),
   impostos: () => req('GET', '/api/admin/impostos')

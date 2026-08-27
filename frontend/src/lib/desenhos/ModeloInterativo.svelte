@@ -445,11 +445,15 @@
       </div>
     </header>
 
+    <!-- Sem `role`: a tela não é uma estampa parada (arrastar gira, as setas
+         giram, + e − aproximam), e também não é um controle de formulário —
+         qualquer papel fixo mentiria sobre uma das duas coisas. Ela é
+         focalizável e tem nome; quem navega por teclado alcança cada
+         orientação útil pelos botões de vista, que são botões de verdade. -->
     <canvas
       bind:this={tela}
       class:arrastando
       tabindex="0"
-      role="img"
       aria-label={r.modelo.aria(fmt.milhar(lugares.total))}
       onpointerdown={inicia}
       onpointermove={move}

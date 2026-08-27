@@ -3,7 +3,8 @@
   import Nav from '$lib/Nav.svelte';
   import Seo from '$lib/Seo.svelte';
   import { goto } from '$app/navigation';
-  import { api, exigeSessao, SEGUNDO_FATOR } from '$lib/api.js';
+  import ContaPerfil from '$lib/paginas/ContaPerfil.svelte';
+  import { api, exigeSessao, PERFIL, SEGUNDO_FATOR } from '$lib/api.js';
   import { rota, textos } from '$lib/conteudo/index.js';
 
   let { lang = 'pt' } = $props();
@@ -16,7 +17,8 @@
 
   // A aba só existe onde o backend responde por ela: uma aba que devolve 404
   // é pior do que uma aba a menos.
-  const abas = $derived(t.abas.filter((a) => a.id !== 'seguranca' || SEGUNDO_FATOR));
+  const ATENDIDA = { seguranca: () => SEGUNDO_FATOR, perfil: () => PERFIL };
+  const abas = $derived(t.abas.filter((a) => (ATENDIDA[a.id] ?? (() => true))()));
 
   // --- segundo fator ---
   // `passo` é o que a tela mostra; se o segundo fator está ativo quem diz é o
@@ -137,7 +139,7 @@
 
 <Seo {lang} caminho="/conta" titulo={t.titulo} descricao={t.titulo} indexar={false} />
 
-<Nav cta={false} {lang} />
+<Nav {lang} modo="app" />
 
 <div class="rule abas">
   {#each abas as aba}
@@ -148,13 +150,6 @@
       data-ativa={tab === aba.id}
     >{aba.label}</button>
   {/each}
-  <span style="flex:1"></span>
-  {#if conta}
-    <span style="display:flex;align-items:center;gap:10px">
-      <span class="display" style="width:30px;height:30px;background:var(--color-neutral-900);color:var(--color-neutral-100);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">{conta.iniciais}</span>
-      <span style="font-size:13px;font-weight:600">{conta.nome}</span>
-    </span>
-  {/if}
 </div>
 
 {#if erro}
@@ -230,6 +225,9 @@
           </div>
         {/each}
       </div>
+
+    {:else if tab === 'perfil'}
+      <ContaPerfil t={t.perfil} />
 
     {:else if tab === 'seguranca'}
       <div class="kicker" style="margin-bottom:12px">{sg.kicker}</div>

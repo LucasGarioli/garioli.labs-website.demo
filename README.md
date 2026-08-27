@@ -48,6 +48,7 @@ SvelteKit 5 no front, Axum (Rust) na API, uma identidade visual do site público
   - [O gerador de orçamentos](#o-gerador-de-orçamentos)
 - [Decisões de projeto](#decisões-de-projeto)
 - [Segurança](#segurança)
+- [A conta: barra, cadastro e pagamento](#a-conta-barra-cadastro-e-pagamento)
   - [Entrada por provedor e segundo fator](#entrada-por-provedor-e-segundo-fator)
 - [Estrutura](#estrutura)
 - [Endpoints](#endpoints)
@@ -724,6 +725,62 @@ a frase não os separa — a recusa diz "inválido ou expirado". Por isso o
 `ErroApi` carrega um `motivo` estável, e é ele que decide se a pessoa digita
 de novo ou recomeça a entrada.
 
+## A conta: barra, cadastro e pagamento
+
+A mesma barra de topo serve o site e a área logada, e ela não pode ser a mesma
+coisa nos dois lugares. O menu de seções aponta para âncoras da página inicial:
+dentro da conta ele levaria quem já é cliente de volta para a vitrine, e o
+anúncio do Resonance falaria com quem já entrou. Por isso `Nav.svelte` tem
+modo:
+
+| Modo | Onde | O que desenha |
+| --- | --- | --- |
+| `site` | página inicial | marca · seções · anúncio · idioma · acesso ou conta · orçamento |
+| `app` | `/conta` | marca · idioma · quem está dentro · sair |
+| `acesso` | `/entrar` | marca · idioma |
+
+O painel do dono tem chrome próprio — nunca teve o menu de seções — e ganhou a
+troca de idioma que só ele não tinha.
+
+Quem está logado não pode ver "Entrar". A verificação de sessão é assíncrona
+(180 ms na demonstração, uma ida ao servidor na API real) e a página é
+pré-renderizada, então a barra tem três estados, não dois: `undefined` é "ainda
+não se sabe", que é tudo o que o HTML do build pode saber, e `null` é "ninguém".
+Na vitrine o desconhecido desenha o anônimo, que é a aposta certa e a hidratação
+corrige; em `/conta` ele não desenha nada, porque ali a página exige sessão e
+"Entrar" nunca é a resposta. `sessao.js` anota o resultado da última
+verificação para o primeiro quadro depois da hidratação já sair certo — é dica
+de desenho, não autorização: quem manda continua sendo o backend.
+
+<img src="docs/img/conta-cadastro.jpg" alt="O cadastro da conta na tela larga e as formas de pagamento no telefone" />
+
+<sub><b>Cadastro da conta</b> — foto, identificação, endereço e faturamento à
+esquerda; as formas de pagamento no telefone, com o aviso de que número de
+cartão não passa por aqui.</sub>
+
+O cadastro (`ContaPerfil.svelte`) grava identificação, endereço e faturamento
+de uma vez — é assim que a pessoa preenche, e gravar metade seria pior do que
+recusar tudo. O CPF e o CNPJ passam pelos mesmos dígitos verificadores do passo
+de qualificação do contrato (`documento.js`, com par em `backend/src/documento.rs`):
+um cadastro fiscal com número impossível vira nota rejeitada meses depois.
+
+A foto é recortada no quadrado central e reduzida para 256 px **no navegador**,
+antes de sair da página: sem isso uma foto de 12 MP viraria um campo de vários
+megabytes. Trocá-la troca também o retrato na barra do topo e na lateral do
+painel — `sessao.js` avisa quem desenha a barra, que senão só descobriria a
+mudança na próxima navegação.
+
+**Número de cartão não passa por esta tela nem por servidor deste projeto.**
+Não há campo para ele, nem na demonstração: quem coleta o número é a operadora,
+nos campos hospedados dela, e o que volta é o resumo que o cadastro guarda —
+bandeira, quatro últimos dígitos, validade e um identificador. A demonstração
+inventa esse resumo; o formato é o de verdade, e as rotas de
+`/api/conta/pagamentos` foram desenhadas sem lugar onde um PAN caberia.
+
+Como nas outras capacidades, quem decide se a aba existe é o backend: `api.js`
+exporta `PERFIL`, e o cliente HTTP o declara `false` enquanto as rotas não
+existirem no Axum — aba que responde 404 é pior do que aba nenhuma.
+
 ## Estrutura
 
 ```
@@ -744,9 +801,12 @@ frontend/
   src/lib/conteudo/index.js   idioma da rota, tradução de caminho (/ ↔ /en) e âncoras
   src/lib/seo.js              JSON-LD: ProfessionalService, WebPage e FAQPage
   src/lib/Seo.svelte          título, descrição, canônica, hreflang, Open Graph, dados estruturados
-  src/lib/Nav.svelte          barra de navegação com scroll-spy escrito direto no DOM e troca de idioma
+  src/lib/Nav.svelte          barra de topo por modo (site/app/acesso), scroll-spy no DOM e troca de idioma
+  src/lib/Marca.svelte        a marca em um lugar só — três tamanhos, fundo claro ou escuro
+  src/lib/sessao.js           dica de desenho da sessão: o que a barra sabe antes de o backend responder
   src/lib/Footer.svelte       rodapé com dados da empresa e selo de parceria (omitido quando vazio)
   src/lib/paginas/*.svelte    as páginas de verdade; recebem `lang` e leem conteudo/
+  src/lib/paginas/ContaPerfil.svelte  o cadastro da conta: foto, endereço, faturamento e pagamento
   src/lib/painel/Orcamentos.svelte  a aba do dono que escreve a proposta, com espelho do que o cliente vê
   src/lib/desenhos/projeto.js memorial do estudo de caso: geometria, fontes, SPL, T30, STI
   src/lib/desenhos/rotulos.js legendas das pranchas nos dois idiomas e formato de número
@@ -787,7 +847,8 @@ docs/img/                     capturas usadas neste README
 | `backend/src/models.rs` | `Proposta::publica` — subtotal, desconto, total, parcela e prazo saem todos do escopo em centavos |
 | `frontend/src/lib/conteudo/` | o site inteiro como dado, nos dois idiomas — um arquivo separa esta versão da privada |
 | `frontend/src/lib/desenhos/projeto.js` | o memorial que as quatro pranchas, o mapa e o modelo desenham: nenhuma cota é digitada duas vezes |
-| `frontend/src/lib/Nav.svelte` | scroll-spy escrito direto no DOM, fora do caminho reativo |
+| `frontend/src/lib/Nav.svelte` | scroll-spy escrito direto no DOM, fora do caminho reativo — e a barra em três estados de sessão |
+| `frontend/src/lib/paginas/ContaPerfil.svelte` | um cadastro de pagamento sem um campo onde um número de cartão caiba |
 | `frontend/src/routes/orcamento/` | triagem de 11 passos que não devolve preço ao cliente |
 | `frontend/src/lib/painel/Orcamentos.svelte` | o espelho do orçamento chama a mesma função que emite o documento — não há segunda conta para divergir |
 
@@ -814,6 +875,10 @@ dono: a rota não se anuncia a quem não é dela.
 | GET | `/api/contratos/:id` | contrato gerado |
 | POST | `/api/contratos/:id/assinatura` | assinatura eletrônica |
 | GET | `/api/conta/me` | painel do cliente · **autenticado** |
+| GET · PUT | `/api/conta/perfil` | cadastro da conta: identificação, endereço, faturamento · **autenticado** |
+| PUT · DELETE | `/api/conta/perfil/foto` | foto de perfil · **autenticado** |
+| POST | `/api/conta/pagamentos` | cadastra a forma de pagamento devolvida pela operadora · **autenticado** |
+| POST · DELETE | `/api/conta/pagamentos/:id` | torna padrão · remove · **autenticado** |
 | GET | `/api/admin/resumo` | KPIs, pipeline, financeiro, execução · **dono** |
 | GET | `/api/admin/auditoria` | trilha imutável · **dono** |
 | GET | `/api/admin/impostos` | MEI × Simples Anexo III × Anexo V · **dono** |
@@ -923,7 +988,16 @@ Nada aqui é surpresa em produção — está listado porque falta mesmo.
 10. **Segundo fator no servidor** — o TOTP é real, mas mora no navegador. No
     Axum faltam as rotas `/api/conta/segundo-fator/*`, o segredo cifrado em
     repouso e um limite de tentativas por desafio.
-11. **Idiomas** — português e inglês. Um terceiro idioma pede um arquivo em
+11. **Formas de pagamento** — o cadastro é simulado: a demonstração inventa
+    bandeira, quatro últimos dígitos e validade, e não há campo para número de
+    cartão em lugar nenhum. Para valer, entram os campos hospedados da operadora
+    (Stripe, Pagar.me) e o identificador que ela devolve; o PAN nunca passa por
+    servidor deste projeto.
+12. **Cadastro no servidor** — as rotas `/api/conta/perfil` e
+    `/api/conta/pagamentos` ainda não existem no Axum, e a foto viaja em data
+    URL dentro do JSON. No servidor ela vira upload de binário com limite de
+    tamanho e verificação do tipo real, não do declarado.
+13. **Idiomas** — português e inglês. Um terceiro idioma pede um arquivo em
     `lib/conteudo/`, uma entrada em `IDIOMAS`, um diretório de rotas espelhando os
     existentes e a tabela correspondente em `desenhos/rotulos.js` e em
     `backend/src/triagem.rs`.

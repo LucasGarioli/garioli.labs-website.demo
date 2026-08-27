@@ -37,7 +37,7 @@
   palavras={t.meta.palavras}
   jsonld={inicio(t)} />
 
-<Nav {lang} />
+<Nav {lang} modo="site" />
 
 <div class="rule faixa faixa-hero">
   <div class="dentro">

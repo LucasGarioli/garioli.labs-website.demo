@@ -38,6 +38,9 @@ export default {
     secoesRotulo: 'Seções do site',
     idiomaRotulo: 'Idioma',
     entrar: 'Entrar',
+    conta: 'Minha conta',
+    painel: 'Painel',
+    sair: 'Sair',
     orcamento: 'Solicitar orçamento',
     secoes: [
       { id: 'servicos', rotulo: 'Serviços' },
@@ -396,6 +399,7 @@ export default {
         { id: 'cursos', label: 'Cursos' },
         { id: 'licencas', label: 'Licenças' },
         { id: 'docs', label: 'Documentos' },
+        { id: 'perfil', label: 'Cadastro' },
         { id: 'seguranca', label: 'Segurança' }
       ],
       fases: ['Solicitação', 'Proposta', 'Contrato', 'Levantamento', 'Projeto', 'Entrega'],
@@ -405,6 +409,99 @@ export default {
         licencas: { kicker: 'Minhas licenças', titulo: 'Softwares e ferramentas' },
         docs: { kicker: 'Meus documentos', titulo: 'Propostas, contratos e recibos' }
       },
+      perfil: {
+        kicker: 'Meu cadastro',
+        titulo: 'Dados da conta',
+        salvar: 'Salvar alterações',
+        salvando: 'Salvando…',
+        salvo: 'Cadastro atualizado.',
+        obrigatorio: 'obrigatório',
+        opcional: 'opcional',
+
+        foto: {
+          titulo: 'Foto',
+          texto:
+            'Aparece na barra do topo e nos documentos que levam sua assinatura. ' +
+            'A imagem é recortada em um quadrado e reduzida antes de sair daqui.',
+          enviar: 'Enviar foto',
+          trocar: 'Trocar foto',
+          remover: 'Remover',
+          enviando: 'Enviando…',
+          semFoto: 'Sem foto — a conta aparece com as iniciais.',
+          tipoInvalido: 'Escolha um arquivo PNG, JPEG ou WebP.',
+          grandeDemais: 'A imagem passa de 10 MB. Escolha uma menor.',
+          falhou: 'Não consegui ler esta imagem.'
+        },
+
+        identificacao: {
+          titulo: 'Identificação',
+          nome: 'Nome completo',
+          email: 'E-mail',
+          emailNota: 'O e-mail identifica a conta e é por onde a entrada acontece — para trocá-lo, fale com a gente.',
+          telefone: 'Telefone'
+        },
+
+        endereco: {
+          titulo: 'Endereço',
+          texto: 'É para onde o levantamento vai e o que consta em contrato.',
+          cep: 'CEP',
+          logradouro: 'Rua, avenida ou rodovia',
+          numero: 'Número',
+          complemento: 'Complemento',
+          bairro: 'Bairro',
+          cidade: 'Cidade',
+          uf: 'UF',
+          pais: 'País'
+        },
+
+        faturamento: {
+          titulo: 'Faturamento',
+          texto: 'É o que sai na nota fiscal e no contrato.',
+          tipo: 'A nota sai em nome de',
+          fisica: 'Pessoa física',
+          juridica: 'Pessoa jurídica',
+          cpf: 'CPF',
+          cnpj: 'CNPJ',
+          razaoSocial: 'Razão social',
+          inscricao: 'Inscrição estadual',
+          isento: 'deixe vazio se for isento',
+          mesmoEndereco: 'Cobrar no mesmo endereço acima'
+        },
+
+        pagamento: {
+          titulo: 'Formas de pagamento',
+          texto:
+            'O número do cartão não passa por esta tela nem por servidor nosso: ' +
+            'quem o coleta é a operadora, nos campos dela, e o que volta para cá ' +
+            'é o resumo abaixo.',
+          vazio: 'Nenhuma forma de pagamento cadastrada.',
+          adicionarCartao: 'Cadastrar cartão',
+          adicionarPix: 'Cadastrar Pix',
+          adicionando: 'Abrindo…',
+          padrao: 'Padrão',
+          tornarPadrao: 'Tornar padrão',
+          remover: 'Remover',
+          cartao: (m) => `${m.bandeira} •••• ${m.final}`,
+          validade: (m) => `validade ${m.validade}`,
+          pix: 'Pix',
+          demonstracao: 'Nesta demonstração o cadastro é simulado — nenhum dado real é pedido ou guardado.'
+        },
+
+        // A recusa vem do backend com um motivo estável; a frase é escolhida
+        // aqui, no idioma da página.
+        erros: {
+          nome_invalido: 'Informe o nome completo.',
+          telefone_invalido: 'O telefone está incompleto.',
+          cep_invalido: 'O CEP tem oito dígitos.',
+          uf_invalida: 'UF desconhecida.',
+          cpf_invalido: 'Este CPF não existe — confira os números.',
+          cnpj_invalido: 'Este CNPJ não existe — confira os números.',
+          razao_social_vazia: 'Informe a razão social.',
+          foto_invalida: 'Envie uma imagem PNG, JPEG ou WebP.',
+          foto_grande: 'A imagem ficou grande demais.'
+        }
+      },
+
       seguranca: {
         kicker: 'Segurança',
         titulo: 'Verificação em dois fatores',

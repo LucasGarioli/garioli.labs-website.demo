@@ -11,13 +11,15 @@
 import {
   api as http,
   PROVEDORES as provedoresHttp,
-  SEGUNDO_FATOR as segundoFatorHttp
+  SEGUNDO_FATOR as segundoFatorHttp,
+  PERFIL as perfilHttp
 } from './api-http.js';
 import {
   api as demo,
   EMAIL_DONO,
   PROVEDORES as provedoresDemo,
-  SEGUNDO_FATOR as segundoFatorDemo
+  SEGUNDO_FATOR as segundoFatorDemo,
+  PERFIL as perfilDemo
 } from './api-demo.js';
 
 export { ErroApi, exigeSessao } from './api-erros.js';
@@ -36,3 +38,6 @@ export const PROVEDORES = MODO_DEMO ? provedoresDemo : provedoresHttp;
 
 /** Verificação em dois fatores atendida por este backend. */
 export const SEGUNDO_FATOR = MODO_DEMO ? segundoFatorDemo : segundoFatorHttp;
+
+/** Cadastro de perfil atendido por este backend. */
+export const PERFIL = MODO_DEMO ? perfilDemo : perfilHttp;

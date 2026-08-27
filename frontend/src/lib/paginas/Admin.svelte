@@ -4,7 +4,9 @@
   import Seo from '$lib/Seo.svelte';
   import Orcamentos from '$lib/painel/Orcamentos.svelte';
   import { api, exigeSessao } from '$lib/api.js';
-  import { rota, textos } from '$lib/conteudo/index.js';
+  import { esquecer, lembrar } from '$lib/sessao.js';
+  import Marca from '$lib/Marca.svelte';
+  import { IDIOMAS, rota, textos } from '$lib/conteudo/index.js';
 
   let { lang = 'pt' } = $props();
   const t = $derived(textos(lang).paginas.admin);
@@ -28,10 +30,19 @@
       });
     api.auditoria().then((l) => (logs = l)).catch(() => {});
     api.impostos().then((t) => (tributos = t)).catch(() => {});
-    api.eu().then((u) => (dono = u)).catch(() => {});
+    api
+      .eu()
+      .then((u) => {
+        dono = u;
+        lembrar(u);
+      })
+      .catch(() => {});
   });
 
   async function sair() {
+    // A dica de interface some antes da chamada: se a rede falhar no meio, é
+    // melhor a barra do site dizer "Entrar" a mais do que a menos.
+    esquecer();
     await api.sair().catch(() => {});
     goto(rota('/entrar', lang));
   }
@@ -74,8 +85,7 @@
 <div class="painel">
   <div class="barra">
     <div>
-      <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
-         style="font-size:16px;color:inherit;text-decoration:none">GARIOLI LABS</a>
+      <Marca {lang} tamanho="media" tom="escuro" />
       <div style="font-size:9.5px;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-neutral-500);margin-top:5px">{t.rotulo}</div>
     </div>
     <div style="display:flex;flex-direction:column;gap:1px">
@@ -94,9 +104,30 @@
       <a href={rota('/', lang)} style="color:var(--color-neutral-400)">{t.atalhos.site}</a>
       <a href={rota('/conta', lang)} style="color:var(--color-neutral-400)">{t.atalhos.cliente}</a>
       <a href={rota('/orcamento', lang)} style="color:var(--color-neutral-400)">{t.atalhos.triagem}</a>
+      <!-- O painel é a única tela sem a faixa do site, e era a única sem por
+           onde trocar de idioma. -->
+      <span class="idiomas" aria-label={textos(lang).nav.idiomaRotulo}>
+        {#each IDIOMAS as i, n}
+          {#if n > 0}<span aria-hidden="true" style="opacity:0.4">/</span>{/if}
+          <a
+            href={rota('/admin', i.codigo)}
+            class="idioma"
+            class:ativo={i.codigo === lang}
+            hreflang={i.htmlLang}
+            lang={i.htmlLang}
+            title={i.trocarPara}
+            aria-current={i.codigo === lang ? 'true' : undefined}>{i.rotulo}</a
+          >
+        {/each}
+      </span>
       {#if dono}
         <div style="display:flex;align-items:center;gap:9px;margin-top:8px">
-          <span class="display" style="width:26px;height:26px;background:var(--color-accent-600);color:var(--color-neutral-100);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700">{dono.iniciais}</span>
+          {#if dono.foto}
+            <!-- A foto do cadastro vale aqui também: é a mesma conta. -->
+            <img src={dono.foto} alt="" width="26" height="26" style="flex:none;display:block;width:26px;height:26px;object-fit:cover" />
+          {:else}
+            <span class="display" style="width:26px;height:26px;background:var(--color-accent-600);color:var(--color-neutral-100);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700">{dono.iniciais}</span>
+          {/if}
           <span style="flex:1;font-size:11.5px;overflow-wrap:anywhere">{dono.email}</span>
         </div>
         <button
@@ -346,6 +377,19 @@
     color: var(--color-neutral-700);
     margin-top: 7px;
   }
+
+  .idiomas {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 4px;
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .idioma { color: var(--color-neutral-500); }
+  .idioma.ativo { color: var(--color-neutral-200); font-weight: 700; }
+  .idioma:hover { color: var(--color-neutral-100); }
 
   .item-menu {
     display: flex;

@@ -266,7 +266,9 @@
     <!-- ————— linhas de visão ————— -->
     <g class="visada">
       {#each visadas as v}
-        <line x1={sx(v.de.x)} y1={sz(v.de.z)} x2={sx(v.ate.x)} y2={sz(v.ate.z)} />
+        <line x1={sx(v.de.x)} y1={sz(v.de.z)} x2={sx(v.ate.x)} y2={sz(v.ate.z)}
+          ><title>{v.t}</title></line
+        >
       {/each}
     </g>
 
@@ -570,8 +572,8 @@
 
   /* Wipeout: a anotacao abre o proprio claro na geometria, como em prancha de
      verdade. Sem isto, "▽ +7,00" e "▽ +11,40" caem em cima dos degraus da
-     plateia e do raio de visada, e nao se leem. */
-  .rot-nivel, .rot-peca, .rot-led, .rot-fonte, .rot-visada, .rot-critico {
+     plateia, e nao se leem. */
+  .rot-nivel, .rot-peca, .rot-led, .rot-fonte, .rot-critico {
     paint-order: stroke;
     stroke: var(--color-text);
     stroke-width: 3.4px;
@@ -582,7 +584,6 @@
   .rot-peca { font-size: 10.5px; letter-spacing: 0.12em; }
   .rot-led { font-size: 10px; letter-spacing: 0.1em; fill: var(--color-accent-400); }
   .rot-fonte { font-size: 10px; letter-spacing: 0.08em; fill: var(--color-accent-400); }
-  .rot-visada { font-size: 10px; letter-spacing: 0.1em; fill: var(--color-neutral-600); }
   .rot-nivel { font-size: 10px; letter-spacing: 0.06em; fill: var(--color-neutral-500); }
   .rot-cota { font-size: 11px; }
   .rot-cota-forte { font-size: 13.5px; font-weight: 600; fill: var(--color-neutral-200); }

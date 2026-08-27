@@ -1,6 +1,7 @@
 <script>
   import Seo from '$lib/Seo.svelte';
   import { api } from '$lib/api.js';
+  import Marca from '$lib/Marca.svelte';
   import { rota, textos } from '$lib/conteudo/index.js';
   import { teclado } from '$lib/documento.js';
 
@@ -77,8 +78,7 @@
 {#if enviado}
   <div class="recebido">
     <div style="max-width:660px;width:100%">
-      <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
-           style="display:block;font-size:16px;color:inherit;text-decoration:none;margin-bottom:26px">GARIOLI LABS</a>
+      <div style="margin-bottom:26px"><Marca {lang} tamanho="media" /></div>
       <div style="height:8px;background:var(--color-accent-600);width:80px;margin-bottom:32px"></div>
       <div class="kicker" style="margin-bottom:14px">{t.recebido.kicker}</div>
       <h1 class="display h1-recebido">{t.recebido.titulo}</h1>
@@ -105,8 +105,7 @@
   <div class="tela">
     <div class="trilho">
       <div>
-        <a href={rota('/', lang)} class="display" title={textos(lang).nav.inicio}
-           style="font-size:18px;color:inherit;text-decoration:none">GARIOLI LABS</a>
+        <Marca {lang} tamanho="media" tom="escuro" />
         <div style="font-size:10px;letter-spacing:0.16em;text-transform:uppercase;color:var(--color-neutral-500);margin-top:6px">{t.assinatura}</div>
       </div>
       <div class="passos">
