@@ -21,7 +21,7 @@ export const empresa = {
   foneE164: '+550000000000',
   email: 'contato@example.com',
   selo: '', // credencial real omitida na demonstração
-  responsavel: 'Lucas Ribeiro Garioli'
+  responsavel: 'Lucas Garioli'
 };
 
 /// `true` só nesta versão pública de demonstração.
